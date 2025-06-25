@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,36 +12,56 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, Edit, Trash2, Users } from "lucide-react";
-import { Customer } from "./Invoices";
+
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  address: string;
+  phone?: string;
+}
 
 const Customers = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    address: ""
+    address: "",
+    phone: ""
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const user = localStorage.getItem("invoice_user");
-    if (!user) {
-      navigate('/');
-      return;
+    if (user) {
+      loadCustomers();
     }
+  }, [user]);
 
-    loadCustomers();
-  }, [navigate]);
+  const loadCustomers = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  const loadCustomers = () => {
-    const user = JSON.parse(localStorage.getItem("invoice_user") || "{}");
-    const userCustomers = JSON.parse(localStorage.getItem(`customers_${user.id}`) || "[]");
-    setCustomers(userCustomers);
+    if (error) {
+      console.error('Error loading customers:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load customers",
+        variant: "destructive",
+      });
+    } else {
+      setCustomers(data || []);
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.email) {
@@ -51,41 +73,61 @@ const Customers = () => {
       return;
     }
 
-    const user = JSON.parse(localStorage.getItem("invoice_user") || "{}");
-    const userCustomers = JSON.parse(localStorage.getItem(`customers_${user.id}`) || "[]");
+    if (!user) return;
 
-    if (editingCustomer) {
-      // Update existing customer
-      const updatedCustomers = userCustomers.map((customer: Customer) =>
-        customer.id === editingCustomer.id
-          ? { ...customer, ...formData }
-          : customer
-      );
-      localStorage.setItem(`customers_${user.id}`, JSON.stringify(updatedCustomers));
-      setCustomers(updatedCustomers);
-      
+    setIsLoading(true);
+
+    try {
+      if (editingCustomer) {
+        // Update existing customer
+        const { error } = await supabase
+          .from('customers')
+          .update({
+            name: formData.name,
+            email: formData.email,
+            address: formData.address,
+            phone: formData.phone
+          })
+          .eq('id', editingCustomer.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Customer updated!",
+          description: "Customer information has been updated successfully.",
+        });
+      } else {
+        // Add new customer
+        const { error } = await supabase
+          .from('customers')
+          .insert({
+            user_id: user.id,
+            name: formData.name,
+            email: formData.email,
+            address: formData.address,
+            phone: formData.phone
+          });
+
+        if (error) throw error;
+
+        toast({
+          title: "Customer added!",
+          description: "New customer has been added successfully.",
+        });
+      }
+
+      loadCustomers();
+      resetForm();
+    } catch (error) {
+      console.error('Error saving customer:', error);
       toast({
-        title: "Customer updated!",
-        description: "Customer information has been updated successfully.",
-      });
-    } else {
-      // Add new customer
-      const newCustomer: Customer = {
-        id: Date.now().toString(),
-        ...formData
-      };
-      
-      const updatedCustomers = [...userCustomers, newCustomer];
-      localStorage.setItem(`customers_${user.id}`, JSON.stringify(updatedCustomers));
-      setCustomers(updatedCustomers);
-      
-      toast({
-        title: "Customer added!",
-        description: "New customer has been added successfully.",
+        title: "Error",
+        description: "Failed to save customer",
+        variant: "destructive",
       });
     }
 
-    resetForm();
+    setIsLoading(false);
   };
 
   const handleEdit = (customer: Customer) => {
@@ -93,27 +135,36 @@ const Customers = () => {
     setFormData({
       name: customer.name,
       email: customer.email,
-      address: customer.address
+      address: customer.address,
+      phone: customer.phone || ""
     });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (customerId: string) => {
-    const user = JSON.parse(localStorage.getItem("invoice_user") || "{}");
-    const userCustomers = JSON.parse(localStorage.getItem(`customers_${user.id}`) || "[]");
-    const updatedCustomers = userCustomers.filter((customer: Customer) => customer.id !== customerId);
-    
-    localStorage.setItem(`customers_${user.id}`, JSON.stringify(updatedCustomers));
-    setCustomers(updatedCustomers);
-    
-    toast({
-      title: "Customer deleted!",
-      description: "Customer has been removed successfully.",
-    });
+  const handleDelete = async (customerId: string) => {
+    const { error } = await supabase
+      .from('customers')
+      .delete()
+      .eq('id', customerId);
+
+    if (error) {
+      console.error('Error deleting customer:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete customer",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Customer deleted!",
+        description: "Customer has been removed successfully.",
+      });
+      loadCustomers();
+    }
   };
 
   const resetForm = () => {
-    setFormData({ name: "", email: "", address: "" });
+    setFormData({ name: "", email: "", address: "", phone: "" });
     setEditingCustomer(null);
     setIsDialogOpen(false);
   };
@@ -179,6 +230,15 @@ const Customers = () => {
                   />
                 </div>
                 <div>
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="Enter phone number"
+                  />
+                </div>
+                <div>
                   <Label htmlFor="address">Address</Label>
                   <Textarea
                     id="address"
@@ -192,8 +252,12 @@ const Customers = () => {
                   <Button type="button" variant="outline" onClick={resetForm}>
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                    {editingCustomer ? 'Update Customer' : 'Add Customer'}
+                  <Button 
+                    type="submit" 
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Saving..." : (editingCustomer ? 'Update Customer' : 'Add Customer')}
                   </Button>
                 </div>
               </form>
@@ -231,6 +295,7 @@ const Customers = () => {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
                     <TableHead>Address</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -240,6 +305,7 @@ const Customers = () => {
                     <TableRow key={customer.id}>
                       <TableCell className="font-medium">{customer.name}</TableCell>
                       <TableCell>{customer.email}</TableCell>
+                      <TableCell>{customer.phone || 'No phone provided'}</TableCell>
                       <TableCell className="max-w-xs truncate">{customer.address || 'No address provided'}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
