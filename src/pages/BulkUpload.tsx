@@ -89,7 +89,8 @@ const BulkUpload = () => {
         batch_id: batchId,
       }));
 
-      const { error } = await supabase
+      // Use type assertion to work around the missing table definition
+      const { error } = await (supabase as any)
         .from('bulk_invoice_items')
         .insert(bulkItems);
 
