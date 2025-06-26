@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -58,7 +57,15 @@ const SavedInvoices = () => {
 
       if (error) throw error;
 
-      setInvoices(data || []);
+      // Process the data to ensure items is properly parsed
+      const processedData = (data || []).map(invoice => ({
+        ...invoice,
+        items: Array.isArray(invoice.items) ? invoice.items : 
+               typeof invoice.items === 'string' ? 
+               JSON.parse(invoice.items) : []
+      }));
+
+      setInvoices(processedData);
     } catch (error) {
       console.error('Error fetching saved invoices:', error);
       toast({

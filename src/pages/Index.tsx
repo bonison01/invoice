@@ -1,183 +1,154 @@
-import { useNavigate } from "react-router-dom";
+
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Users, Settings, Archive, CheckCircle, Clock, Shield } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-
-interface Feature {
-  title: string;
-  description: string;
-  icon: React.ComponentType<any>;
-}
+import { FileText, Users, Settings, Save, Upload } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
-  if (loading) {
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
+  if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-        <div>Loading...</div>
+        <div className="text-center space-y-6">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Welcome to Invoicely
+            </h1>
+            <p className="text-gray-600 text-lg">
+              Professional invoice management made simple
+            </p>
+          </div>
+          <div className="flex gap-4 justify-center">
+            <Button 
+              onClick={() => navigate('/auth')}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            >
+              Sign In
+            </Button>
+            <Button 
+              onClick={() => navigate('/invoices')}
+              variant="outline"
+            >
+              Try Without Account
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-12">
+        <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              Invoice Generator
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Dashboard
             </h1>
-            <p className="text-gray-600">Create professional invoices in minutes</p>
+            <p className="text-gray-600">Welcome back, {user.email}</p>
           </div>
-          {user && (
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">Welcome, {user.email}</span>
-              <Button onClick={handleSignOut} variant="outline" size="sm">
-                Sign Out
-              </Button>
-            </div>
-          )}
+          <Button onClick={handleSignOut} variant="outline">
+            Sign Out
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer group" onClick={() => navigate('/invoices')}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/invoices')}>
             <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-                  <FileText className="w-6 h-6 text-blue-600" />
-                </div>
-                <CardTitle>Create Invoice</CardTitle>
-              </div>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Create Invoice
+              </CardTitle>
+              <CardDescription>
+                Create professional invoices with ease
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <CardDescription>
-                Generate professional invoices with customizable templates and automatic calculations.
-              </CardDescription>
+              <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                Get Started
+              </Button>
             </CardContent>
           </Card>
 
-          {user && (
-            <>
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer group" onClick={() => navigate('/customers')}>
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
-                      <Users className="w-6 h-6 text-green-600" />
-                    </div>
-                    <CardTitle>Manage Customers</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>
-                    Add and organize your customer information for quick invoice creation.
-                  </CardDescription>
-                </CardContent>
-              </Card>
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/bulk-upload')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="w-5 h-5" />
+                Bulk Upload
+              </CardTitle>
+              <CardDescription>
+                Upload multiple invoice items from CSV
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full" variant="outline">
+                Upload CSV
+              </Button>
+            </CardContent>
+          </Card>
 
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer group" onClick={() => navigate('/saved-invoices')}>
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
-                      <Archive className="w-6 h-6 text-purple-600" />
-                    </div>
-                    <CardTitle>Saved Invoices</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>
-                    View and download your previously saved invoices.
-                  </CardDescription>
-                </CardContent>
-              </Card>
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/saved-invoices')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Save className="w-5 h-5" />
+                Saved Invoices
+              </CardTitle>
+              <CardDescription>
+                View and download your saved invoices
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full" variant="outline">
+                View Invoices
+              </Button>
+            </CardContent>
+          </Card>
 
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer group" onClick={() => navigate('/business-settings')}>
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
-                      <Settings className="w-6 h-6 text-orange-600" />
-                    </div>
-                    <CardTitle>Business Settings</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>
-                    Configure your business information and invoice defaults.
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            </>
-          )}
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/customers')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Customers
+              </CardTitle>
+              <CardDescription>
+                Manage your customer database
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full" variant="outline">
+                Manage Customers
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/business-settings')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                Business Settings
+              </CardTitle>
+              <CardDescription>
+                Configure your business information
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full" variant="outline">
+                Settings
+              </Button>
+            </CardContent>
+          </Card>
         </div>
-
-        {!user && (
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold mb-4">Ready to get started?</h2>
-            <p className="text-gray-600 mb-6">Sign up to save your invoices and manage customers</p>
-            <Button onClick={() => navigate('/auth')} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-              Sign Up / Sign In
-            </Button>
-          </div>
-        )}
-
-        <section className="mb-16">
-          <h2 className="text-3xl font-semibold mb-8 text-center">Key Features</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard
-              title="Easy Invoice Creation"
-              description="Create and customize invoices quickly with our intuitive interface."
-              icon={CheckCircle}
-            />
-            <FeatureCard
-              title="Customer Management"
-              description="Manage your customers efficiently, making invoicing a breeze."
-              icon={Users}
-            />
-            <FeatureCard
-              title="Save and Download"
-              description="Save your invoices securely and download them in PDF format."
-              icon={Archive}
-            />
-            <FeatureCard
-              title="Payment Tracking"
-              description="Keep track of payments and send reminders to your clients."
-              icon={Clock}
-            />
-            <FeatureCard
-              title="Secure and Reliable"
-              description="Your data is safe with us. We use industry-standard security measures."
-              icon={Shield}
-            />
-          </div>
-        </section>
       </div>
     </div>
   );
 };
-
-interface FeatureCardProps {
-  title: string;
-  description: string;
-  icon: React.ComponentType<any>;
-}
-
-const FeatureCard: React.FC<FeatureCardProps> = ({ title, description, icon: Icon }) => (
-  <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-    <div className="flex items-center mb-4">
-      <div className="p-3 bg-blue-100 text-blue-600 rounded-full mr-3">
-        <Icon className="w-6 h-6" />
-      </div>
-      <h3 className="text-xl font-semibold">{title}</h3>
-    </div>
-    <p className="text-gray-600">{description}</p>
-  </div>
-);
 
 export default Index;
