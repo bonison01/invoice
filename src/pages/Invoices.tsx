@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -119,19 +120,7 @@ const Invoices = () => {
     if (!user) return;
 
     try {
-      // Try to fetch from businesses table first
-      const { data: businessData, error: businessError } = await supabase
-        .from('businesses')
-        .select('business_name')
-        .eq('user_id', user.id)
-        .single();
-
-      if (businessData && !businessError) {
-        setBusinessName(businessData.business_name);
-        return;
-      }
-
-      // Fallback to business_settings table
+      // Fetch from business_settings table
       const { data: settingsData, error: settingsError } = await supabase
         .from('business_settings')
         .select('business_name')
