@@ -155,7 +155,7 @@ const Invoices = () => {
         customer_name: invoice.customer?.name || '',
         customer_email: invoice.customer?.email || '',
         customer_address: invoice.customer?.address || '',
-        items: invoice.items,
+        items: JSON.parse(JSON.stringify(invoice.items)) as any, // Properly serialize to JSON
         subtotal: invoice.subtotal,
         tax_rate: invoice.taxRate,
         tax_amount: invoice.taxAmount,
@@ -163,7 +163,7 @@ const Invoices = () => {
         total: invoice.total,
         payment_instructions: invoice.paymentInstructions,
         thank_you_note: invoice.thankYouNote,
-        business_name: 'Your Business Name', // This should come from business settings
+        business_name: 'Your Business Name',
         business_address: null,
         business_phone: null
       };
