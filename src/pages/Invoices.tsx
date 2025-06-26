@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -72,10 +71,45 @@ const Invoices = () => {
 
   const [showPreview, setShowPreview] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [businessSettings, setBusinessSettings] = useState<any>(null);
 
   useEffect(() => {
     calculateTotals();
   }, [invoice.items, invoice.taxRate, invoice.discountType, invoice.discountValue]);
+
+  useEffect(() => {
+    if (user) {
+      fetchBusinessSettings();
+    }
+  }, [user]);
+
+  const fetchBusinessSettings = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('business_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (data) {
+        setBusinessSettings(data);
+        // Update invoice defaults with business settings
+        setInvoice(prev => ({
+          ...prev,
+          paymentInstructions: data.payment_instructions || prev.paymentInstructions,
+          thankYouNote: data.thank_you_note || prev.thankYouNote
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching business settings:', error);
+    }
+  };
 
   const calculateTotals = () => {
     const subtotal = invoice.items.reduce((sum, item) => sum + item.amount, 0);
@@ -144,6 +178,15 @@ const Invoices = () => {
       return;
     }
 
+    if (!invoice.customer) {
+      toast({
+        title: "Customer required",
+        description: "Please select a customer before saving the invoice.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -155,7 +198,7 @@ const Invoices = () => {
         customer_name: invoice.customer?.name || '',
         customer_email: invoice.customer?.email || '',
         customer_address: invoice.customer?.address || '',
-        items: JSON.parse(JSON.stringify(invoice.items)) as any, // Properly serialize to JSON
+        items: JSON.parse(JSON.stringify(invoice.items)) as any,
         subtotal: invoice.subtotal,
         tax_rate: invoice.taxRate,
         tax_amount: invoice.taxAmount,
@@ -163,9 +206,9 @@ const Invoices = () => {
         total: invoice.total,
         payment_instructions: invoice.paymentInstructions,
         thank_you_note: invoice.thankYouNote,
-        business_name: 'Your Business Name',
-        business_address: null,
-        business_phone: null
+        business_name: businessSettings?.business_name || 'Your Business Name',
+        business_address: businessSettings?.business_address || null,
+        business_phone: businessSettings?.business_phone || null
       };
 
       const { error } = await supabase
@@ -178,6 +221,11 @@ const Invoices = () => {
         title: "Invoice saved!",
         description: "Your invoice has been saved successfully.",
       });
+
+      // Optionally navigate to saved invoices
+      setTimeout(() => {
+        navigate('/saved-invoices');
+      }, 1500);
     } catch (error) {
       console.error('Error saving invoice:', error);
       toast({

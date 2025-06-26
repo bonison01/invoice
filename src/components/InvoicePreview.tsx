@@ -5,9 +5,12 @@ import { Invoice } from "@/pages/Invoices";
 
 interface InvoicePreviewProps {
   invoice: Invoice;
+  businessName?: string;
+  businessAddress?: string;
+  businessPhone?: string;
 }
 
-const InvoicePreview = ({ invoice }: InvoicePreviewProps) => {
+const InvoicePreview = ({ invoice, businessName, businessAddress, businessPhone }: InvoicePreviewProps) => {
   return (
     <Card className="max-h-screen overflow-auto">
       <CardHeader>
@@ -23,8 +26,14 @@ const InvoicePreview = ({ invoice }: InvoicePreviewProps) => {
                 <p className="text-gray-600">#{invoice.invoiceNumber}</p>
               </div>
               <div className="text-right">
-                <div className="text-lg font-semibold">Your Business Name</div>
-                <div className="text-sm text-gray-600">Date: {invoice.date}</div>
+                <div className="text-lg font-semibold">{businessName || "Your Business Name"}</div>
+                {businessAddress && (
+                  <div className="text-sm text-gray-600 mt-1 whitespace-pre-line">{businessAddress}</div>
+                )}
+                {businessPhone && (
+                  <div className="text-sm text-gray-600">{businessPhone}</div>
+                )}
+                <div className="text-sm text-gray-600 mt-2">Date: {invoice.date}</div>
               </div>
             </div>
           </div>
