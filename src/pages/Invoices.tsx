@@ -1,15 +1,16 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Download, Save } from "lucide-react";
+import { ArrowLeft, Plus, Save, Download } from "lucide-react";
 import InvoiceItem from "@/components/InvoiceItem";
 import CustomerSelector from "@/components/CustomerSelector";
 import InvoicePreview from "@/components/InvoicePreview";
@@ -29,6 +30,7 @@ export interface Customer {
   name: string;
   email: string;
   address: string;
+  phone?: string;
 }
 
 export interface Invoice {
@@ -50,6 +52,7 @@ export interface Invoice {
 
 const Invoices = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [invoice, setInvoice] = useState<Invoice>({
     id: '',
     invoiceNumber: `INV-${Date.now()}`,
@@ -68,13 +71,7 @@ const Invoices = () => {
   });
 
   const [showPreview, setShowPreview] = useState(false);
-
-  useEffect(() => {
-    const user = localStorage.getItem("invoice_user");
-    if (!user) {
-      navigate('/');
-    }
-  }, [navigate]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     calculateTotals();
@@ -137,30 +134,60 @@ const Invoices = () => {
     }));
   };
 
-  const saveInvoice = () => {
-    const user = JSON.parse(localStorage.getItem("invoice_user") || "{}");
-    const userInvoices = JSON.parse(localStorage.getItem(`invoices_${user.id}`) || "[]");
-    
-    const invoiceToSave = {
-      ...invoice,
-      id: invoice.id || Date.now().toString()
-    };
-
-    const existingIndex = userInvoices.findIndex((inv: Invoice) => inv.id === invoiceToSave.id);
-    
-    if (existingIndex >= 0) {
-      userInvoices[existingIndex] = invoiceToSave;
-    } else {
-      userInvoices.push(invoiceToSave);
+  const saveInvoice = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to save invoices.",
+        variant: "destructive",
+      });
+      return;
     }
 
-    localStorage.setItem(`invoices_${user.id}`, JSON.stringify(userInvoices));
-    setInvoice(invoiceToSave);
-    
-    toast({
-      title: "Invoice saved!",
-      description: "Your invoice has been saved successfully.",
-    });
+    setIsLoading(true);
+
+    try {
+      const invoiceData = {
+        user_id: user.id,
+        invoice_number: invoice.invoiceNumber,
+        date: invoice.date,
+        customer_id: invoice.customer?.id || null,
+        customer_name: invoice.customer?.name || '',
+        customer_email: invoice.customer?.email || '',
+        customer_address: invoice.customer?.address || '',
+        items: invoice.items,
+        subtotal: invoice.subtotal,
+        tax_rate: invoice.taxRate,
+        tax_amount: invoice.taxAmount,
+        discount: invoice.discountAmount,
+        total: invoice.total,
+        payment_instructions: invoice.paymentInstructions,
+        thank_you_note: invoice.thankYouNote,
+        business_name: 'Your Business Name', // This should come from business settings
+        business_address: null,
+        business_phone: null
+      };
+
+      const { error } = await supabase
+        .from('saved_invoices')
+        .insert(invoiceData);
+
+      if (error) throw error;
+
+      toast({
+        title: "Invoice saved!",
+        description: "Your invoice has been saved successfully.",
+      });
+    } catch (error) {
+      console.error('Error saving invoice:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save invoice. Please try again.",
+        variant: "destructive",
+      });
+    }
+
+    setIsLoading(false);
   };
 
   const exportToPDF = () => {
@@ -191,10 +218,12 @@ const Invoices = () => {
             <Button onClick={() => setShowPreview(!showPreview)} variant="outline">
               {showPreview ? 'Hide' : 'Show'} Preview
             </Button>
-            <Button onClick={saveInvoice} variant="outline">
-              <Save className="w-4 h-4 mr-2" />
-              Save
-            </Button>
+            {user && (
+              <Button onClick={saveInvoice} variant="outline" disabled={isLoading}>
+                <Save className="w-4 h-4 mr-2" />
+                {isLoading ? 'Saving...' : 'Save'}
+              </Button>
+            )}
             <Button onClick={exportToPDF} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
               <Download className="w-4 h-4 mr-2" />
               Export PDF
@@ -318,6 +347,28 @@ const Invoices = () => {
                     value={invoice.discountValue}
                     onChange={(e) => setInvoice(prev => ({ ...prev, discountValue: parseFloat(e.target.value) || 0 }))}
                   />
+                </div>
+                
+                {/* Totals Display */}
+                <div className="border-t pt-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>${invoice.subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Tax ({invoice.taxRate}%):</span>
+                    <span>${invoice.taxAmount.toFixed(2)}</span>
+                  </div>
+                  {invoice.discountAmount > 0 && (
+                    <div className="flex justify-between text-red-600">
+                      <span>Discount:</span>
+                      <span>-${invoice.discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-lg border-t pt-2">
+                    <span>Total:</span>
+                    <span>${invoice.total.toFixed(2)}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
