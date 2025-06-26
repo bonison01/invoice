@@ -9,10 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Save, Download } from "lucide-react";
+import { ArrowLeft, Plus, Save, Download, Upload } from "lucide-react";
 import InvoiceItem from "@/components/InvoiceItem";
 import CustomerSelector from "@/components/CustomerSelector";
 import InvoicePreview from "@/components/InvoicePreview";
+import BulkUploadDialog from "@/components/BulkUploadDialog";
 
 export interface InvoiceItem {
   id: string;
@@ -72,6 +73,8 @@ const Invoices = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [businessSettings, setBusinessSettings] = useState<any>(null);
+  const [businessName, setBusinessName] = useState<string>('Your Business Name');
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
 
   useEffect(() => {
     calculateTotals();
@@ -80,6 +83,7 @@ const Invoices = () => {
   useEffect(() => {
     if (user) {
       fetchBusinessSettings();
+      fetchBusinessName();
     }
   }, [user]);
 
@@ -108,6 +112,37 @@ const Invoices = () => {
       }
     } catch (error) {
       console.error('Error fetching business settings:', error);
+    }
+  };
+
+  const fetchBusinessName = async () => {
+    if (!user) return;
+
+    try {
+      // Try to fetch from businesses table first
+      const { data: businessData, error: businessError } = await supabase
+        .from('businesses')
+        .select('business_name')
+        .eq('user_id', user.id)
+        .single();
+
+      if (businessData && !businessError) {
+        setBusinessName(businessData.business_name);
+        return;
+      }
+
+      // Fallback to business_settings table
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('business_settings')
+        .select('business_name')
+        .eq('user_id', user.id)
+        .single();
+
+      if (settingsData && !settingsError) {
+        setBusinessName(settingsData.business_name);
+      }
+    } catch (error) {
+      console.error('Error fetching business name:', error);
     }
   };
 
@@ -148,6 +183,18 @@ const Invoices = () => {
       ...prev,
       items: [...prev.items, newItem]
     }));
+  };
+
+  const handleBulkItemsAdd = (items: InvoiceItem[]) => {
+    setInvoice(prev => ({
+      ...prev,
+      items: [...prev.items, ...items]
+    }));
+    setShowBulkUpload(false);
+    toast({
+      title: "Items added!",
+      description: `Successfully added ${items.length} items to the invoice.`,
+    });
   };
 
   const updateItem = (id: string, updatedItem: Partial<InvoiceItem>) => {
@@ -206,7 +253,7 @@ const Invoices = () => {
         total: invoice.total,
         payment_instructions: invoice.paymentInstructions,
         thank_you_note: invoice.thankYouNote,
-        business_name: businessSettings?.business_name || 'Your Business Name',
+        business_name: businessSettings?.business_name || businessName,
         business_address: businessSettings?.business_address || null,
         business_phone: businessSettings?.business_phone || null
       };
@@ -259,7 +306,9 @@ const Invoices = () => {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Create Invoice
               </h1>
-              <p className="text-gray-600">Invoice #{invoice.invoiceNumber}</p>
+              <p className="text-gray-600">
+                {businessName} - Invoice #{invoice.invoiceNumber}
+              </p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -327,16 +376,22 @@ const Invoices = () => {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle>Invoice Items</CardTitle>
-                  <Button onClick={addItem} size="sm">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Item
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={() => setShowBulkUpload(true)} size="sm" variant="outline">
+                      <Upload className="w-4 h-4 mr-2" />
+                      Bulk Upload
+                    </Button>
+                    <Button onClick={addItem} size="sm">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Item
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
                 {invoice.items.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    No items added yet. Click "Add Item" to get started.
+                    No items added yet. Click "Add Item" or "Bulk Upload" to get started.
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -456,6 +511,13 @@ const Invoices = () => {
             </div>
           )}
         </div>
+
+        {/* Bulk Upload Dialog */}
+        <BulkUploadDialog
+          open={showBulkUpload}
+          onOpenChange={setShowBulkUpload}
+          onItemsAdd={handleBulkItemsAdd}
+        />
       </div>
     </div>
   );

@@ -48,6 +48,7 @@ const CustomerSelector = ({ selectedCustomer, onCustomerSelect }: CustomerSelect
     const { data, error } = await supabase
       .from('customers')
       .select('*')
+      .eq('user_id', user.id) // Filter by user_id to only show user's customers
       .order('name');
 
     if (error) {
@@ -131,7 +132,7 @@ const CustomerSelector = ({ selectedCustomer, onCustomerSelect }: CustomerSelect
       {user ? (
         <div className="text-center">
           {customers.length === 0 && !isLoading && (
-            <p className="text-gray-500 mb-2">No customers found.</p>
+            <p className="text-gray-500 mb-2">No customers found for your account.</p>
           )}
           {isLoading && (
             <p className="text-gray-500 mb-2">Loading customers...</p>
