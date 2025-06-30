@@ -43,10 +43,11 @@ const Customers = () => {
 
   const loadCustomers = async () => {
     if (!user) return;
-    
+
     const { data, error } = await supabase
       .from('customers')
       .select('*')
+      .eq('user_id', user.id) // Only fetch user's customers
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -63,7 +64,7 @@ const Customers = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.email) {
       toast({
         title: "Error",
@@ -142,10 +143,13 @@ const Customers = () => {
   };
 
   const handleDelete = async (customerId: string) => {
+    if (!user) return;
+
     const { error } = await supabase
       .from('customers')
       .delete()
-      .eq('id', customerId);
+      .eq('id', customerId)
+      .eq('user_id', user.id); // Ensure it's the user's own customer
 
     if (error) {
       console.error('Error deleting customer:', error);
@@ -187,7 +191,7 @@ const Customers = () => {
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button 
+              <Button
                 onClick={() => resetForm()}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
@@ -201,8 +205,8 @@ const Customers = () => {
                   {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
                 </DialogTitle>
                 <DialogDescription>
-                  {editingCustomer 
-                    ? 'Update customer information below.' 
+                  {editingCustomer
+                    ? 'Update customer information below.'
                     : 'Enter customer details to add them to your database.'
                   }
                 </DialogDescription>
@@ -252,8 +256,8 @@ const Customers = () => {
                   <Button type="button" variant="outline" onClick={resetForm}>
                     Cancel
                   </Button>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                     disabled={isLoading}
                   >
@@ -281,7 +285,7 @@ const Customers = () => {
                 <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No customers yet</h3>
                 <p className="text-gray-500 mb-4">Get started by adding your first customer.</p>
-                <Button 
+                <Button
                   onClick={() => setIsDialogOpen(true)}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 >

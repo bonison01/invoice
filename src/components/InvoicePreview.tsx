@@ -1,3 +1,4 @@
+// components/InvoicePreview.tsx
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -5,16 +6,22 @@ import { Invoice } from "@/pages/Invoices";
 
 interface InvoicePreviewProps {
   invoice: Invoice;
-  businessName?: string;
+  businessName: string;
   businessAddress?: string;
   businessPhone?: string;
+  isPrint?: boolean; // 👈 Add this line
 }
 
-const InvoicePreview = ({ invoice, businessName, businessAddress, businessPhone }: InvoicePreviewProps) => {
+const InvoicePreview = ({
+  invoice,
+  businessName,
+  businessAddress,
+  businessPhone,
+}: InvoicePreviewProps) => {
   return (
     <Card className="max-h-screen overflow-auto">
       <CardHeader>
-        <CardTitle>Invoice Preview</CardTitle>
+        {/* <CardTitle>Invoice Preview</CardTitle> */}
       </CardHeader>
       <CardContent>
         <div className="space-y-6 bg-white p-6 border rounded-lg">
@@ -26,7 +33,7 @@ const InvoicePreview = ({ invoice, businessName, businessAddress, businessPhone 
                 <p className="text-gray-600">#{invoice.invoiceNumber}</p>
               </div>
               <div className="text-right">
-                <div className="text-lg font-semibold">{businessName || "Your Business Name"}</div>
+                <div className="text-lg font-semibold">{businessName}</div>
                 {businessAddress && (
                   <div className="text-sm text-gray-600 mt-1 whitespace-pre-line">{businessAddress}</div>
                 )}

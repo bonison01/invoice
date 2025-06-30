@@ -138,14 +138,14 @@ const Invoices = () => {
   const calculateTotals = () => {
     const subtotal = invoice.items.reduce((sum, item) => sum + item.amount, 0);
     const taxAmount = (subtotal * invoice.taxRate) / 100;
-    
+
     let discountAmount = 0;
     if (invoice.discountType === 'percentage') {
       discountAmount = (subtotal * invoice.discountValue) / 100;
     } else {
       discountAmount = invoice.discountValue;
     }
-    
+
     const total = subtotal + taxAmount - discountAmount;
 
     setInvoice(prev => ({
@@ -189,8 +189,8 @@ const Invoices = () => {
   const updateItem = (id: string, updatedItem: Partial<InvoiceItem>) => {
     setInvoice(prev => ({
       ...prev,
-      items: prev.items.map(item => 
-        item.id === id 
+      items: prev.items.map(item =>
+        item.id === id
           ? { ...item, ...updatedItem, amount: (updatedItem.quantity || item.quantity) * (updatedItem.unitPrice || item.unitPrice) }
           : item
       )
@@ -440,7 +440,7 @@ const Invoices = () => {
                     onChange={(e) => setInvoice(prev => ({ ...prev, discountValue: parseFloat(e.target.value) || 0 }))}
                   />
                 </div>
-                
+
                 {/* Totals Display */}
                 <div className="border-t pt-4 space-y-2">
                   <div className="flex justify-between">
@@ -494,11 +494,19 @@ const Invoices = () => {
           </div>
 
           {/* Preview */}
+
+
           {showPreview && (
             <div className="lg:sticky lg:top-8">
-              <InvoicePreview invoice={invoice} />
+              <InvoicePreview
+                invoice={invoice}
+                businessName={businessName || businessSettings?.business_name || ""}
+                businessAddress={businessSettings?.business_address || ""}
+                businessPhone={businessSettings?.business_phone || ""}
+              />
             </div>
           )}
+
         </div>
 
         {/* Bulk Upload Dialog */}

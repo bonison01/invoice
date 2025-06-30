@@ -83,16 +83,19 @@ const BusinessSettings = () => {
     try {
       const { error } = await supabase
         .from('business_settings')
-        .upsert({
-          user_id: user.id,
-          business_name: settings.business_name,
-          business_address: settings.business_address,
-          business_phone: settings.business_phone,
-          business_email: settings.business_email,
-          payment_instructions: settings.payment_instructions,
-          thank_you_note: settings.thank_you_note,
-          updated_at: new Date().toISOString()
-        });
+        .upsert(
+          {
+            user_id: user.id,
+            business_name: settings.business_name,
+            business_address: settings.business_address,
+            business_phone: settings.business_phone,
+            business_email: settings.business_email,
+            payment_instructions: settings.payment_instructions,
+            thank_you_note: settings.thank_you_note,
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: 'user_id' } // ✅ ensure updates instead of no-op
+        );
 
       if (error) throw error;
 
@@ -110,6 +113,7 @@ const BusinessSettings = () => {
     }
     setIsSaving(false);
   };
+
 
   const handleInputChange = (field: keyof BusinessSettings, value: string) => {
     setSettings(prev => ({
@@ -216,8 +220,8 @@ const BusinessSettings = () => {
                 />
               </div>
 
-              <Button 
-                onClick={saveSettings} 
+              <Button
+                onClick={saveSettings}
                 disabled={isSaving || !settings.business_name.trim()}
                 className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >

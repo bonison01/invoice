@@ -1,15 +1,34 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, createRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Download, Eye } from "lucide-react";
 import InvoicePreview from "@/components/InvoicePreview";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { Invoice } from "@/pages/Invoices";
+import html2pdf from "html2pdf.js";
 
 interface SavedInvoice {
   id: string;
@@ -37,12 +56,47 @@ const SavedInvoices = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
+  const [shouldDownload, setShouldDownload] = useState(false);
+
+  const [businessName, setBusinessName] = useState<string>("");
+  const [businessAddress, setBusinessAddress] = useState<string>("");
+  const [businessPhone, setBusinessPhone] = useState<string>("");
+
+  const hiddenInvoiceRef = createRef<HTMLDivElement>();
 
   useEffect(() => {
     if (user) {
+      fetchBusinessSettings();
       fetchSavedInvoices();
     }
   }, [user]);
+
+  const fetchBusinessSettings = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("business_settings")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error && error.code !== "PGRST116") throw error;
+
+      if (data) {
+        setBusinessName(data.business_name || "");
+        setBusinessAddress(data.business_address || "");
+        setBusinessPhone(data.business_phone || "");
+      }
+    } catch (error) {
+      console.error("Error fetching business settings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load business settings.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const fetchSavedInvoices = async () => {
     if (!user) return;
@@ -50,24 +104,25 @@ const SavedInvoices = () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('saved_invoices')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .from("saved_invoices")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      // Process the data to ensure items is properly parsed
-      const processedData = (data || []).map(invoice => ({
+      const processedData = (data || []).map((invoice) => ({
         ...invoice,
-        items: Array.isArray(invoice.items) ? invoice.items : 
-               typeof invoice.items === 'string' ? 
-               JSON.parse(invoice.items) : []
+        items: Array.isArray(invoice.items)
+          ? invoice.items
+          : typeof invoice.items === "string"
+            ? JSON.parse(invoice.items)
+            : [],
       }));
 
       setInvoices(processedData);
     } catch (error) {
-      console.error('Error fetching saved invoices:', error);
+      console.error("Error fetching saved invoices:", error);
       toast({
         title: "Error",
         description: "Failed to load saved invoices.",
@@ -78,39 +133,63 @@ const SavedInvoices = () => {
   };
 
   const viewInvoice = (savedInvoice: SavedInvoice) => {
-    const invoice: Invoice = {
-      id: savedInvoice.id,
-      invoiceNumber: savedInvoice.invoice_number,
-      date: savedInvoice.date,
-      customer: {
-        id: '',
-        name: savedInvoice.customer_name,
-        email: savedInvoice.customer_email,
-        address: savedInvoice.customer_address
-      },
-      items: savedInvoice.items || [],
-      subtotal: savedInvoice.subtotal,
-      taxRate: savedInvoice.tax_rate,
-      taxAmount: savedInvoice.tax_amount,
-      discountType: 'fixed',
-      discountValue: savedInvoice.discount,
-      discountAmount: savedInvoice.discount,
-      total: savedInvoice.total,
-      paymentInstructions: savedInvoice.payment_instructions || '',
-      thankYouNote: savedInvoice.thank_you_note || ''
-    };
-
+    const invoice: Invoice = convertToInvoice(savedInvoice);
     setSelectedInvoice(invoice);
     setShowPreview(true);
   };
 
   const downloadInvoice = (invoice: SavedInvoice) => {
-    // This would integrate with a PDF generation library
-    toast({
-      title: "PDF Download",
-      description: `Downloading invoice ${invoice.invoice_number}...`,
-    });
+    const invoiceData = convertToInvoice(invoice);
+    setSelectedInvoice(invoiceData);
+    setShouldDownload(true); // triggers the useEffect
   };
+
+  const convertToInvoice = (savedInvoice: SavedInvoice): Invoice => ({
+    id: savedInvoice.id,
+    invoiceNumber: savedInvoice.invoice_number,
+    date: savedInvoice.date,
+    customer: {
+      id: "",
+      name: savedInvoice.customer_name,
+      email: savedInvoice.customer_email,
+      address: savedInvoice.customer_address,
+    },
+    items: savedInvoice.items || [],
+    subtotal: savedInvoice.subtotal,
+    taxRate: savedInvoice.tax_rate,
+    taxAmount: savedInvoice.tax_amount,
+    discountType: "fixed",
+    discountValue: savedInvoice.discount,
+    discountAmount: savedInvoice.discount,
+    total: savedInvoice.total,
+    paymentInstructions: savedInvoice.payment_instructions || "",
+    thankYouNote: savedInvoice.thank_you_note || "",
+  });
+
+  useEffect(() => {
+    if (shouldDownload && hiddenInvoiceRef.current && selectedInvoice) {
+      html2pdf()
+        .set({
+          margin: 0.5,
+          filename: `Invoice-${selectedInvoice.invoiceNumber}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
+        })
+        .from(hiddenInvoiceRef.current)
+        .save()
+        .then(() => setShouldDownload(false))
+        .catch((err) => {
+          console.error("PDF generation error:", err);
+          toast({
+            title: "PDF Error",
+            description: "Failed to generate PDF.",
+            variant: "destructive",
+          });
+          setShouldDownload(false);
+        });
+    }
+  }, [shouldDownload, hiddenInvoiceRef, selectedInvoice]);
 
   if (isLoading) {
     return (
@@ -124,7 +203,7 @@ const SavedInvoices = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-8">
-          <Button onClick={() => navigate('/')} variant="outline" size="sm">
+          <Button onClick={() => navigate("/")} variant="outline" size="sm">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
@@ -140,15 +219,15 @@ const SavedInvoices = () => {
           <CardHeader>
             <CardTitle>Your Invoices</CardTitle>
             <CardDescription>
-              {invoices.length} saved invoice{invoices.length !== 1 ? 's' : ''}
+              {invoices.length} saved invoice{invoices.length !== 1 ? "s" : ""}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {invoices.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>No saved invoices yet.</p>
-                <Button 
-                  onClick={() => navigate('/invoices')} 
+                <Button
+                  onClick={() => navigate("/invoices")}
                   className="mt-4"
                   variant="outline"
                 >
@@ -208,11 +287,34 @@ const SavedInvoices = () => {
         <Dialog open={showPreview} onOpenChange={setShowPreview}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Invoice Preview</DialogTitle>
+              {/* <DialogTitle>Invoice Preview</DialogTitle> */}
             </DialogHeader>
-            {selectedInvoice && <InvoicePreview invoice={selectedInvoice} />}
+            {selectedInvoice && (
+              <InvoicePreview
+                invoice={selectedInvoice}
+                businessName={businessName}
+                businessAddress={businessAddress}
+                businessPhone={businessPhone}
+                isPrint={true}
+              />
+            )}
           </DialogContent>
         </Dialog>
+
+        {/* Hidden invoice for PDF generation */}
+        <div style={{ position: "absolute", left: "-9999px", top: "-9999px" }}>
+          {selectedInvoice && (
+            <div ref={hiddenInvoiceRef}>
+              <InvoicePreview
+                invoice={selectedInvoice}
+                businessName={businessName}
+                businessAddress={businessAddress}
+                businessPhone={businessPhone}
+                isPrint={true}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
