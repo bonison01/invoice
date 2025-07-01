@@ -35,40 +35,36 @@ const BulkUploadDialog = ({ open, onOpenChange, onItemsAdd }: BulkUploadDialogPr
 
   const parseCSV = (csvText: string): InvoiceItem[] => {
     const lines = csvText.split('\n');
-    const headers = lines[0].split(',').map(h => h.trim());
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
     
-    const requiredHeaders = ['description', 'quantity', 'unit_price'];
-    const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+    // Expected column order: sl_no, date, order_id, description, quantity, unit_price
+    const expectedHeaders = ['sl_no', 'date', 'order_id', 'description', 'quantity', 'unit_price'];
     
-    if (missingHeaders.length > 0) {
-      throw new Error(`Missing required columns: ${missingHeaders.join(', ')}`);
-    }
-
     const items: InvoiceItem[] = [];
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
 
       const values = line.split(',').map(v => v.trim());
-      const item: any = {};
+      
+      // Map values by position, not by header names
+      const slNo = values[0] || '';
+      const date = values[1] || new Date().toISOString().split('T')[0];
+      const orderId = values[2] || '';
+      const description = values[3] || '';
+      const quantity = parseInt(values[4]) || 1;
+      const unitPrice = parseFloat(values[5]) || 0;
 
-      headers.forEach((header, index) => {
-        item[header] = values[index] || '';
-      });
-
-      // Validate and convert data types
-      if (!item.description) {
+      // Validate required fields
+      if (!description) {
         throw new Error(`Row ${i + 1}: Description is required`);
       }
 
-      const quantity = parseInt(item.quantity) || 1;
-      const unitPrice = parseFloat(item.unit_price) || 0;
-
       items.push({
         id: `bulk-${Date.now()}-${i}`,
-        date: item.date || new Date().toISOString().split('T')[0],
-        orderId: item.order_id || '',
-        description: item.description,
+        date,
+        orderId,
+        description,
         quantity,
         unitPrice,
         amount: quantity * unitPrice,
@@ -105,10 +101,10 @@ const BulkUploadDialog = ({ open, onOpenChange, onItemsAdd }: BulkUploadDialogPr
   };
 
   const downloadTemplate = () => {
-    const template = `description,quantity,unit_price,order_id,date
-Website Development,1,75000.00,ORD-001,2024-01-01
-Logo Design,2,12500.00,ORD-002,2024-01-02
-Consulting Services,4,7500.00,ORD-003,2024-01-03`;
+    const template = `Sl No,Date,Order ID,Description,Qty,Unit Price
+1,2024-01-01,ORD-001,Website Development,1,75000
+2,2024-01-02,ORD-002,Logo Design,2,12500
+3,2024-01-03,ORD-003,Consulting Services,4,7500`;
 
     const blob = new Blob([template], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -140,14 +136,18 @@ Consulting Services,4,7500.00,ORD-003,2024-01-03`;
               </Button>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg">
-              <h5 className="font-medium mb-2">Required columns:</h5>
+              <h5 className="font-medium mb-2">Column order (must be followed exactly):</h5>
               <ul className="text-sm text-gray-600 space-y-1">
-                <li><strong>description:</strong> Item description (required)</li>
-                <li><strong>quantity:</strong> Quantity (number, required)</li>
-                <li><strong>unit_price:</strong> Price per unit in rupees (number, required)</li>
-                <li><strong>order_id:</strong> Order ID (optional)</li>
-                <li><strong>date:</strong> Date in YYYY-MM-DD format (optional)</li>
+                <li><strong>1. Sl No:</strong> Serial number (optional)</li>
+                <li><strong>2. Date:</strong> Date in YYYY-MM-DD format (optional, defaults to today)</li>
+                <li><strong>3. Order ID:</strong> Order ID (optional)</li>
+                <li><strong>4. Description:</strong> Item description (required)</li>
+                <li><strong>5. Qty:</strong> Quantity (number, required)</li>
+                <li><strong>6. Unit Price:</strong> Price per unit in rupees (number, required)</li>
               </ul>
+              <p className="text-xs text-gray-500 mt-2">
+                Note: Values are assigned by column position, not by header names. Follow the exact order above.
+              </p>
             </div>
           </div>
 
