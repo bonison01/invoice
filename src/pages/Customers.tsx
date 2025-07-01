@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, Edit, Trash2, Users } from "lucide-react";
+import Navbar from "@/components/Navbar";
 
 interface Customer {
   id: string;
@@ -174,7 +175,8 @@ const Customers = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-purple-50">
+      <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -183,7 +185,7 @@ const Customers = () => {
               Back to Dashboard
             </Button>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-purple-600 bg-clip-text text-transparent">
                 Customer Management
               </h1>
               <p className="text-gray-600">Manage your customer database</p>
@@ -193,7 +195,7 @@ const Customers = () => {
             <DialogTrigger asChild>
               <Button
                 onClick={() => resetForm()}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                className="bg-gradient-to-r from-green-600 to-purple-600 hover:from-green-700 hover:to-purple-700"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Customer
@@ -258,7 +260,7 @@ const Customers = () => {
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    className="bg-gradient-to-r from-green-600 to-purple-600 hover:from-green-700 hover:to-purple-700"
                     disabled={isLoading}
                   >
                     {isLoading ? "Saving..." : (editingCustomer ? 'Update Customer' : 'Add Customer')}
@@ -287,7 +289,7 @@ const Customers = () => {
                 <p className="text-gray-500 mb-4">Get started by adding your first customer.</p>
                 <Button
                   onClick={() => setIsDialogOpen(true)}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  className="bg-gradient-to-r from-green-600 to-purple-600 hover:from-green-700 hover:to-purple-700"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Your First Customer

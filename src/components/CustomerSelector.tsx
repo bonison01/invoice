@@ -43,7 +43,7 @@ const CustomerSelector = ({ selectedCustomer, onCustomerSelect }: CustomerSelect
 
   const loadCustomers = async () => {
     if (!user) return;
-    
+
     setIsLoading(true);
     const { data, error } = await supabase
       .from('customers')
@@ -68,7 +68,7 @@ const CustomerSelector = ({ selectedCustomer, onCustomerSelect }: CustomerSelect
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
     setShowSuggestions(true);
-    
+
     if (!value) {
       onCustomerSelect(null);
     }
@@ -93,7 +93,7 @@ const CustomerSelector = ({ selectedCustomer, onCustomerSelect }: CustomerSelect
           />
           <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
         </div>
-        
+
         {showSuggestions && filteredCustomers.length > 0 && (
           <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
             {filteredCustomers.map((customer) => (
@@ -144,8 +144,8 @@ const CustomerSelector = ({ selectedCustomer, onCustomerSelect }: CustomerSelect
         </div>
       ) : (
         <div className="p-4 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-700">
-            <strong>Guest Mode:</strong> You can create an invoice and export it as PDF. 
+          <p className="text-sm text-green-700">
+            <strong>Guest Mode:</strong> You can create an invoice and export it as PDF.
             To save customers and invoices, please sign in.
           </p>
         </div>

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload, Download } from "lucide-react";
+import Navbar from "@/components/Navbar";
 
 const BulkUpload = () => {
   const navigate = useNavigate();
@@ -133,7 +134,8 @@ const BulkUpload = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-purple-50">
+      <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-8">
           <Button onClick={() => navigate('/')} variant="outline" size="sm">
@@ -141,7 +143,7 @@ const BulkUpload = () => {
             Back to Dashboard
           </Button>
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-purple-600 bg-clip-text text-transparent">
               Bulk Upload
             </h1>
             <p className="text-gray-600">Upload invoice items from CSV file</p>
@@ -194,8 +196,8 @@ const BulkUpload = () => {
               </div>
 
               {file && (
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800">
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <p className="text-sm text-green-800">
                     <strong>Selected file:</strong> {file.name} ({Math.round(file.size / 1024)} KB)
                   </p>
                 </div>
@@ -204,7 +206,7 @@ const BulkUpload = () => {
               <Button 
                 onClick={handleUpload} 
                 disabled={!file || isUploading}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                className="w-full bg-gradient-to-r from-green-600 to-purple-600 hover:from-green-700 hover:to-purple-700"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 {isUploading ? 'Uploading...' : 'Upload CSV'}

@@ -1,11 +1,13 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+
 import ProtectedRoute from "@/components/ProtectedRoute";
+import Layout from "@/layout";
+
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Invoices from "./pages/Invoices";
@@ -24,41 +26,46 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            {/* Auth route does NOT include navbar */}
             <Route path="/auth" element={<Auth />} />
-            <Route path="/invoices" element={<Invoices />} />
-            <Route
-              path="/customers"
-              element={
-                <ProtectedRoute>
-                  <Customers />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/business-settings"
-              element={
-                <ProtectedRoute>
-                  <BusinessSettings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/saved-invoices"
-              element={
-                <ProtectedRoute>
-                  <SavedInvoices />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/bulk-upload"
-              element={
-                <ProtectedRoute>
-                  <BulkUpload />
-                </ProtectedRoute>
-              }
-            />
+
+            {/* All other routes go through Layout */}
+            <Route element={<Layout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/invoices" element={<Invoices />} />
+              <Route
+                path="/customers"
+                element={
+                  <ProtectedRoute>
+                    <Customers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/business-settings"
+                element={
+                  <ProtectedRoute>
+                    <BusinessSettings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/saved-invoices"
+                element={
+                  <ProtectedRoute>
+                    <SavedInvoices />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/bulk-upload"
+                element={
+                  <ProtectedRoute>
+                    <BulkUpload />
+                  </ProtectedRoute>
+                }
+              />
+            </Route>
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

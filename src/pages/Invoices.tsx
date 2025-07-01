@@ -14,6 +14,7 @@ import InvoiceItem from "@/components/InvoiceItem";
 import CustomerSelector from "@/components/CustomerSelector";
 import InvoicePreview from "@/components/InvoicePreview";
 import BulkUploadDialog from "@/components/BulkUploadDialog";
+import Navbar from "@/components/Navbar";
 
 export interface InvoiceItem {
   id: string;
@@ -282,7 +283,8 @@ const Invoices = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-yellow-50 flex items-center justify-center p-4">
+      <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -291,7 +293,7 @@ const Invoices = () => {
               Back to Dashboard
             </Button>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-yellow-600 bg-clip-text text-transparent">
                 Create Invoice
               </h1>
               <p className="text-gray-600">
@@ -309,7 +311,7 @@ const Invoices = () => {
                 {isLoading ? 'Saving...' : 'Save'}
               </Button>
             )}
-            <Button onClick={exportToPDF} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+            <Button onClick={exportToPDF} className="bg-gradient-to-r from-green-600 to-yellow-600 hover:from-green-700 hover:to-yellow-700">
               <Download className="w-4 h-4 mr-2" />
               Export PDF
             </Button>
