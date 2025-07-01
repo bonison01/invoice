@@ -1,15 +1,15 @@
-// components/InvoicePreview.tsx
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Invoice } from "@/pages/Invoices";
+import { IndianRupee } from "lucide-react";
 
 interface InvoicePreviewProps {
   invoice: Invoice;
   businessName: string;
   businessAddress?: string;
   businessPhone?: string;
-  isPrint?: boolean; // 👈 Add this line
+  isPrint?: boolean;
 }
 
 const InvoicePreview = ({
@@ -82,8 +82,18 @@ const InvoicePreview = ({
                       <TableCell className="text-xs">{item.orderId}</TableCell>
                       <TableCell className="text-xs">{item.description}</TableCell>
                       <TableCell className="text-xs">{item.quantity}</TableCell>
-                      <TableCell className="text-xs">${item.unitPrice.toFixed(2)}</TableCell>
-                      <TableCell className="text-xs text-right">${item.amount.toFixed(2)}</TableCell>
+                      <TableCell className="text-xs">
+                        <div className="flex items-center">
+                          <IndianRupee className="w-3 h-3 mr-1" />
+                          {item.unitPrice.toFixed(2)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs text-right">
+                        <div className="flex items-center justify-end">
+                          <IndianRupee className="w-3 h-3 mr-1" />
+                          {item.amount.toFixed(2)}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -97,21 +107,33 @@ const InvoicePreview = ({
               <div className="w-64 space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span>${invoice.subtotal.toFixed(2)}</span>
+                  <div className="flex items-center">
+                    <IndianRupee className="w-4 h-4 mr-1" />
+                    {invoice.subtotal.toFixed(2)}
+                  </div>
                 </div>
                 <div className="flex justify-between">
                   <span>Tax ({invoice.taxRate}%):</span>
-                  <span>${invoice.taxAmount.toFixed(2)}</span>
+                  <div className="flex items-center">
+                    <IndianRupee className="w-4 h-4 mr-1" />
+                    {invoice.taxAmount.toFixed(2)}
+                  </div>
                 </div>
                 {invoice.discountAmount > 0 && (
                   <div className="flex justify-between">
                     <span>Discount:</span>
-                    <span>-${invoice.discountAmount.toFixed(2)}</span>
+                    <div className="flex items-center">
+                      -<IndianRupee className="w-4 h-4 mr-1" />
+                      {invoice.discountAmount.toFixed(2)}
+                    </div>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-lg border-t pt-2">
                   <span>Total:</span>
-                  <span>${invoice.total.toFixed(2)}</span>
+                  <div className="flex items-center">
+                    <IndianRupee className="w-4 h-4 mr-1" />
+                    {invoice.total.toFixed(2)}
+                  </div>
                 </div>
               </div>
             </div>

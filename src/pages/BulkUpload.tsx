@@ -120,8 +120,8 @@ const BulkUpload = () => {
 
   const downloadTemplate = () => {
     const template = `date,order_id,description,quantity,unit_price,customer_name
-2024-01-01,ORD-001,Website Development,1,1500.00,John Doe
-2024-01-02,ORD-002,Logo Design,2,250.00,Jane Smith`;
+2024-01-01,ORD-001,Website Development,1,75000.00,John Doe
+2024-01-02,ORD-002,Logo Design,2,12500.00,Jane Smith`;
 
     const blob = new Blob([template], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -167,7 +167,7 @@ const BulkUpload = () => {
                   <li><strong>date:</strong> Date in YYYY-MM-DD format</li>
                   <li><strong>description:</strong> Item description</li>
                   <li><strong>quantity:</strong> Quantity (number)</li>
-                  <li><strong>unit_price:</strong> Price per unit (number)</li>
+                  <li><strong>unit_price:</strong> Price per unit in rupees (number)</li>
                   <li><strong>order_id:</strong> Order ID (optional)</li>
                   <li><strong>customer_name:</strong> Customer name (optional)</li>
                 </ul>

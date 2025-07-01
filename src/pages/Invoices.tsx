@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -424,14 +423,14 @@ const Invoices = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="percentage">Percentage (%)</SelectItem>
-                        <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
+                        <SelectItem value="fixed">Fixed Amount (₹)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div>
                   <Label htmlFor="discountValue">
-                    Discount {invoice.discountType === 'percentage' ? '(%)' : '($)'}
+                    Discount {invoice.discountType === 'percentage' ? '(%)' : '(₹)'}
                   </Label>
                   <Input
                     id="discountValue"
@@ -445,21 +444,21 @@ const Invoices = () => {
                 <div className="border-t pt-4 space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>${invoice.subtotal.toFixed(2)}</span>
+                    <span>₹{invoice.subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Tax ({invoice.taxRate}%):</span>
-                    <span>${invoice.taxAmount.toFixed(2)}</span>
+                    <span>₹{invoice.taxAmount.toFixed(2)}</span>
                   </div>
                   {invoice.discountAmount > 0 && (
                     <div className="flex justify-between text-red-600">
                       <span>Discount:</span>
-                      <span>-${invoice.discountAmount.toFixed(2)}</span>
+                      <span>-₹{invoice.discountAmount.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between font-bold text-lg border-t pt-2">
                     <span>Total:</span>
-                    <span>${invoice.total.toFixed(2)}</span>
+                    <span>₹{invoice.total.toFixed(2)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -494,8 +493,6 @@ const Invoices = () => {
           </div>
 
           {/* Preview */}
-
-
           {showPreview && (
             <div className="lg:sticky lg:top-8">
               <InvoicePreview

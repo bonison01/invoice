@@ -254,7 +254,7 @@ const SavedInvoices = () => {
                         </TableCell>
                         <TableCell>{invoice.date}</TableCell>
                         <TableCell>{invoice.customer_name}</TableCell>
-                        <TableCell>${invoice.total.toFixed(2)}</TableCell>
+                        <TableCell>₹{invoice.total.toFixed(2)}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button

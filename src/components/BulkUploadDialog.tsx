@@ -106,9 +106,9 @@ const BulkUploadDialog = ({ open, onOpenChange, onItemsAdd }: BulkUploadDialogPr
 
   const downloadTemplate = () => {
     const template = `description,quantity,unit_price,order_id,date
-Website Development,1,1500.00,ORD-001,2024-01-01
-Logo Design,2,250.00,ORD-002,2024-01-02
-Consulting Services,4,150.00,ORD-003,2024-01-03`;
+Website Development,1,75000.00,ORD-001,2024-01-01
+Logo Design,2,12500.00,ORD-002,2024-01-02
+Consulting Services,4,7500.00,ORD-003,2024-01-03`;
 
     const blob = new Blob([template], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -144,7 +144,7 @@ Consulting Services,4,150.00,ORD-003,2024-01-03`;
               <ul className="text-sm text-gray-600 space-y-1">
                 <li><strong>description:</strong> Item description (required)</li>
                 <li><strong>quantity:</strong> Quantity (number, required)</li>
-                <li><strong>unit_price:</strong> Price per unit (number, required)</li>
+                <li><strong>unit_price:</strong> Price per unit in rupees (number, required)</li>
                 <li><strong>order_id:</strong> Order ID (optional)</li>
                 <li><strong>date:</strong> Date in YYYY-MM-DD format (optional)</li>
               </ul>
