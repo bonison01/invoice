@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Upload, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
 interface BusinessSettings {
@@ -38,6 +38,8 @@ const BusinessSettings = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadingSeal, setUploadingSeal] = useState(false);
+  const [uploadingSignature, setUploadingSignature] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -123,6 +125,80 @@ const BusinessSettings = () => {
     setIsSaving(false);
   };
 
+  const uploadFile = async (file: File, type: 'seal' | 'signature') => {
+    if (!user) return;
+
+    const isValidType = file.type.startsWith('image/');
+    if (!isValidType) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (type === 'seal') {
+      setUploadingSeal(true);
+    } else {
+      setUploadingSignature(true);
+    }
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${type}.${fileExt}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('business-docs')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('business-docs')
+        .getPublicUrl(fileName);
+
+      setSettings(prev => ({
+        ...prev,
+        [type === 'seal' ? 'seal_url' : 'signature_url']: publicUrl
+      }));
+
+      toast({
+        title: "Upload successful!",
+        description: `${type === 'seal' ? 'Seal' : 'Signature'} uploaded successfully.`,
+      });
+    } catch (error) {
+      console.error(`Error uploading ${type}:`, error);
+      toast({
+        title: "Upload failed",
+        description: `Failed to upload ${type}. Please try again.`,
+        variant: "destructive",
+      });
+    }
+
+    if (type === 'seal') {
+      setUploadingSeal(false);
+    } else {
+      setUploadingSignature(false);
+    }
+  };
+
+  const removeFile = (type: 'seal' | 'signature') => {
+    setSettings(prev => ({
+      ...prev,
+      [type === 'seal' ? 'seal_url' : 'signature_url']: ''
+    }));
+  };
 
   const handleInputChange = (field: keyof BusinessSettings, value: string) => {
     setSettings(prev => ({
@@ -231,34 +307,92 @@ const BusinessSettings = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="seal_url">Business Seal (Image URL)</Label>
-                  <Input
-                    id="seal_url"
-                    value={settings.seal_url}
-                    onChange={(e) => handleInputChange('seal_url', e.target.value)}
-                    placeholder="https://example.com/seal.png"
-                  />
+                  <Label htmlFor="seal_upload">Business Seal</Label>
+                  <div className="space-y-2">
+                    {settings.seal_url ? (
+                      <div className="relative inline-block">
+                        <img 
+                          src={settings.seal_url} 
+                          alt="Business Seal" 
+                          className="w-20 h-20 object-contain border rounded"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                          onClick={() => removeFile('seal')}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                        <p className="text-sm text-gray-500">Upload seal image</p>
+                      </div>
+                    )}
+                    <Input
+                      id="seal_upload"
+                      type="file"
+                      accept="image/*"
+                      disabled={uploadingSeal}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadFile(file, 'seal');
+                      }}
+                    />
+                  </div>
                 </div>
                 <div>
-                  <Label htmlFor="signature_url">Signature (Image URL)</Label>
-                  <Input
-                    id="signature_url"
-                    value={settings.signature_url}
-                    onChange={(e) => handleInputChange('signature_url', e.target.value)}
-                    placeholder="https://example.com/signature.png"
-                  />
+                  <Label htmlFor="signature_upload">Signature</Label>
+                  <div className="space-y-2">
+                    {settings.signature_url ? (
+                      <div className="relative inline-block">
+                        <img 
+                          src={settings.signature_url} 
+                          alt="Signature" 
+                          className="w-32 h-16 object-contain border rounded"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                          onClick={() => removeFile('signature')}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                        <p className="text-sm text-gray-500">Upload signature image</p>
+                      </div>
+                    )}
+                    <Input
+                      id="signature_upload"
+                      type="file"
+                      accept="image/*"
+                      disabled={uploadingSignature}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadFile(file, 'signature');
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 
               <Button
                 onClick={saveSettings}
-                disabled={isSaving || !settings.business_name.trim()}
+                disabled={isSaving || !settings.business_name.trim() || uploadingSeal || uploadingSignature}
                 className="w-full bg-gradient-to-r from-green-600 to-purple-600 hover:from-green-700 hover:to-purple-700"
               >
                 <Save className="w-4 h-4 mr-2" />
-                {isSaving ? 'Saving...' : 'Save Settings'}
+                {isSaving ? 'Saving...' : uploadingSeal || uploadingSignature ? 'Uploading...' : 'Save Settings'}
               </Button>
             </CardContent>
           </Card>
