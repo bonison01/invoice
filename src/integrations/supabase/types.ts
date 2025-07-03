@@ -19,6 +19,8 @@ export type Database = {
           id: string
           logo_url: string | null
           payment_instructions: string | null
+          seal_url: string | null
+          signature_url: string | null
           thank_you_note: string | null
           updated_at: string
           user_id: string
@@ -32,6 +34,8 @@ export type Database = {
           id?: string
           logo_url?: string | null
           payment_instructions?: string | null
+          seal_url?: string | null
+          signature_url?: string | null
           thank_you_note?: string | null
           updated_at?: string
           user_id: string
@@ -45,6 +49,8 @@ export type Database = {
           id?: string
           logo_url?: string | null
           payment_instructions?: string | null
+          seal_url?: string | null
+          signature_url?: string | null
           thank_you_note?: string | null
           updated_at?: string
           user_id?: string

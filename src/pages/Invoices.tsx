@@ -502,6 +502,8 @@ const Invoices = () => {
                 businessName={businessName || businessSettings?.business_name || ""}
                 businessAddress={businessSettings?.business_address || ""}
                 businessPhone={businessSettings?.business_phone || ""}
+                sealUrl={businessSettings?.seal_url || ""}
+                signatureUrl={businessSettings?.signature_url || ""}
               />
             </div>
           )}

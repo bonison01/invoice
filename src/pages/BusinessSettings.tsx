@@ -19,6 +19,8 @@ interface BusinessSettings {
   business_email: string;
   payment_instructions: string;
   thank_you_note: string;
+  seal_url: string;
+  signature_url: string;
 }
 
 const BusinessSettings = () => {
@@ -30,7 +32,9 @@ const BusinessSettings = () => {
     business_phone: '',
     business_email: '',
     payment_instructions: 'Payment due within 30 days. Thank you for your business!',
-    thank_you_note: 'Thank you for choosing our services.'
+    thank_you_note: 'Thank you for choosing our services.',
+    seal_url: '',
+    signature_url: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -63,7 +67,9 @@ const BusinessSettings = () => {
           business_phone: data.business_phone || '',
           business_email: data.business_email || '',
           payment_instructions: data.payment_instructions || 'Payment due within 30 days. Thank you for your business!',
-          thank_you_note: data.thank_you_note || 'Thank you for choosing our services.'
+          thank_you_note: data.thank_you_note || 'Thank you for choosing our services.',
+          seal_url: data.seal_url || '',
+          signature_url: data.signature_url || ''
         });
       }
     } catch (error) {
@@ -93,6 +99,8 @@ const BusinessSettings = () => {
             business_email: settings.business_email,
             payment_instructions: settings.payment_instructions,
             thank_you_note: settings.thank_you_note,
+            seal_url: settings.seal_url,
+            signature_url: settings.signature_url,
             updated_at: new Date().toISOString()
           },
           { onConflict: 'user_id' } // ✅ ensure updates instead of no-op
@@ -221,6 +229,27 @@ const BusinessSettings = () => {
                   placeholder="Thank you message..."
                   rows={2}
                 />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="seal_url">Business Seal (Image URL)</Label>
+                  <Input
+                    id="seal_url"
+                    value={settings.seal_url}
+                    onChange={(e) => handleInputChange('seal_url', e.target.value)}
+                    placeholder="https://example.com/seal.png"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="signature_url">Signature (Image URL)</Label>
+                  <Input
+                    id="signature_url"
+                    value={settings.signature_url}
+                    onChange={(e) => handleInputChange('signature_url', e.target.value)}
+                    placeholder="https://example.com/signature.png"
+                  />
+                </div>
               </div>
 
               <Button

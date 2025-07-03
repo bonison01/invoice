@@ -9,6 +9,8 @@ interface InvoicePreviewProps {
   businessName: string;
   businessAddress?: string;
   businessPhone?: string;
+  sealUrl?: string;
+  signatureUrl?: string;
   isPrint?: boolean;
 }
 
@@ -17,6 +19,8 @@ const InvoicePreview = ({
   businessName,
   businessAddress,
   businessPhone,
+  sealUrl,
+  signatureUrl,
 }: InvoicePreviewProps) => {
   return (
     <Card className="max-h-screen overflow-auto">
@@ -150,6 +154,24 @@ const InvoicePreview = ({
             {invoice.thankYouNote && (
               <div>
                 <p className="text-sm text-gray-600 whitespace-pre-line">{invoice.thankYouNote}</p>
+              </div>
+            )}
+            
+            {/* Seal and Signature */}
+            {(sealUrl || signatureUrl) && (
+              <div className="flex justify-between items-end mt-8 pt-4">
+                {sealUrl && (
+                  <div className="text-center">
+                    <img src={sealUrl} alt="Business Seal" className="w-20 h-20 object-contain mx-auto mb-2" />
+                    <p className="text-xs text-gray-500">Business Seal</p>
+                  </div>
+                )}
+                {signatureUrl && (
+                  <div className="text-center">
+                    <img src={signatureUrl} alt="Signature" className="w-32 h-16 object-contain mx-auto mb-2" />
+                    <p className="text-xs text-gray-500">Authorized Signature</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
