@@ -15,6 +15,7 @@ import Customers from "./pages/Customers";
 import BusinessSettings from "./pages/BusinessSettings";
 import SavedInvoices from "./pages/SavedInvoices";
 import BulkUpload from "./pages/BulkUpload";
+import Inventory from "./pages/Inventory";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <BulkUpload />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/inventory"
+                element={
+                  <ProtectedRoute>
+                    <Inventory />
                   </ProtectedRoute>
                 }
               />

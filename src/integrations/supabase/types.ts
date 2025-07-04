@@ -90,6 +90,107 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_products: {
+        Row: {
+          barcode: string | null
+          category: string | null
+          cost_price: number | null
+          created_at: string
+          current_stock: number
+          description: string | null
+          id: string
+          is_active: boolean
+          max_stock_level: number | null
+          min_stock_level: number | null
+          name: string
+          sku: string | null
+          unit: string | null
+          unit_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          barcode?: string | null
+          category?: string | null
+          cost_price?: number | null
+          created_at?: string
+          current_stock?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_stock_level?: number | null
+          min_stock_level?: number | null
+          name: string
+          sku?: string | null
+          unit?: string | null
+          unit_price?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          barcode?: string | null
+          category?: string | null
+          cost_price?: number | null
+          created_at?: string
+          current_stock?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_stock_level?: number | null
+          min_stock_level?: number | null
+          name?: string
+          sku?: string | null
+          unit?: string | null
+          unit_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      inventory_stock_movements: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          movement_type: string
+          notes: string | null
+          product_id: string
+          quantity: number
+          reference_id: string | null
+          reference_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          movement_type: string
+          notes?: string | null
+          product_id: string
+          quantity: number
+          reference_id?: string | null
+          reference_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          movement_type?: string
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          reference_id?: string | null
+          reference_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_counter: {
         Row: {
           current_number: number
@@ -300,9 +401,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_low_stock_products: {
+        Args: { user_uuid: string }
+        Returns: {
+          id: string
+          name: string
+          current_stock: number
+          min_stock_level: number
+        }[]
+      }
       get_next_invoice_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      update_product_stock: {
+        Args: {
+          product_id: string
+          quantity_change: number
+          movement_type: string
+          reference_type?: string
+          reference_id?: string
+          notes?: string
+        }
+        Returns: boolean
       }
     }
     Enums: {

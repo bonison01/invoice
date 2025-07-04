@@ -2,7 +2,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Users, Settings, Save, Upload } from "lucide-react";
+import { FileText, Users, Settings, Save, Upload, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Outlet } from 'react-router-dom';
@@ -129,6 +129,23 @@ const Index = () => {
             <CardContent>
               <Button className="w-full" variant="outline">
                 Manage Customers
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/inventory')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="w-5 h-5" />
+                Inventory
+              </CardTitle>
+              <CardDescription>
+                Manage products and stock levels
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full" variant="outline">
+                Manage Inventory
               </Button>
             </CardContent>
           </Card>

@@ -9,12 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Save, Download, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Save, Download, Upload, Package } from "lucide-react";
 import InvoiceItem from "@/components/InvoiceItem";
 import CustomerSelector from "@/components/CustomerSelector";
 import InvoicePreview from "@/components/InvoicePreview";
 import BulkUploadDialog from "@/components/BulkUploadDialog";
+import ProductSelector from "@/components/ProductSelector";
 import Navbar from "@/components/Navbar";
+import { InventoryProduct } from "@/pages/Inventory";
 
 export interface InvoiceItem {
   id: string;
@@ -76,6 +78,7 @@ const Invoices = () => {
   const [businessSettings, setBusinessSettings] = useState<any>(null);
   const [businessName, setBusinessName] = useState<string>('Your Business Name');
   const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [showProductSelector, setShowProductSelector] = useState(false);
 
   useEffect(() => {
     calculateTotals();
@@ -186,6 +189,28 @@ const Invoices = () => {
     });
   };
 
+  const handleProductSelect = (product: InventoryProduct, quantity: number) => {
+    const newItem: InvoiceItem = {
+      id: Date.now().toString(),
+      date: new Date().toISOString().split('T')[0],
+      orderId: product.sku || '',
+      description: product.name + (product.description ? ` - ${product.description}` : ''),
+      quantity: quantity,
+      unitPrice: product.unit_price,
+      amount: quantity * product.unit_price
+    };
+
+    setInvoice(prev => ({
+      ...prev,
+      items: [...prev.items, newItem]
+    }));
+    
+    toast({
+      title: "Product added!",
+      description: `${product.name} has been added to the invoice.`,
+    });
+  };
+
   const updateItem = (id: string, updatedItem: Partial<InvoiceItem>) => {
     setInvoice(prev => ({
       ...prev,
@@ -247,15 +272,52 @@ const Invoices = () => {
         business_phone: businessSettings?.business_phone || null
       };
 
-      const { error } = await supabase
+      const { data: savedInvoice, error } = await supabase
         .from('saved_invoices')
-        .insert(invoiceData);
+        .insert(invoiceData)
+        .select()
+        .single();
 
       if (error) throw error;
 
+      // Update inventory stock levels for products that have SKUs matching inventory
+      for (const item of invoice.items) {
+        if (item.orderId) { // If item has SKU/orderId
+          const { data: products, error: productError } = await supabase
+            .from('inventory_products')
+            .select('id, current_stock, name')
+            .eq('user_id', user.id)
+            .eq('sku', item.orderId)
+            .eq('is_active', true);
+
+          if (!productError && products && products.length > 0) {
+            const product = products[0];
+            
+            // Update stock using the database function
+            const { error: stockError } = await supabase.rpc('update_product_stock', {
+              product_id: product.id,
+              quantity_change: -item.quantity, // Negative for outgoing stock
+              movement_type: 'out',
+              reference_type: 'invoice',
+              reference_id: savedInvoice.id,
+              notes: `Stock reduced for invoice ${invoice.invoiceNumber}`
+            });
+
+            if (stockError) {
+              console.error('Error updating stock for product:', product.name, stockError);
+              toast({
+                title: "Stock Update Warning",
+                description: `Failed to update stock for ${product.name}. Please check inventory manually.`,
+                variant: "destructive",
+              });
+            }
+          }
+        }
+      }
+
       toast({
         title: "Invoice saved!",
-        description: "Your invoice has been saved successfully.",
+        description: "Your invoice has been saved and inventory updated successfully.",
       });
 
       // Optionally navigate to saved invoices
@@ -367,6 +429,10 @@ const Invoices = () => {
                 <div className="flex justify-between items-center">
                   <CardTitle>Invoice Items</CardTitle>
                   <div className="flex gap-2">
+                    <Button onClick={() => setShowProductSelector(true)} size="sm" variant="outline">
+                      <Package className="w-4 h-4 mr-2" />
+                      From Inventory
+                    </Button>
                     <Button onClick={() => setShowBulkUpload(true)} size="sm" variant="outline">
                       <Upload className="w-4 h-4 mr-2" />
                       Bulk Upload
@@ -515,6 +581,13 @@ const Invoices = () => {
           open={showBulkUpload}
           onOpenChange={setShowBulkUpload}
           onItemsAdd={handleBulkItemsAdd}
+        />
+
+        {/* Product Selector Dialog */}
+        <ProductSelector
+          open={showProductSelector}
+          onOpenChange={setShowProductSelector}
+          onSelectProduct={handleProductSelect}
         />
       </div>
     </div>

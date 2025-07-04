@@ -79,6 +79,12 @@ const Navbar = () => {
                       Customer
                     </NavLink>
                     <NavLink
+                      to="/inventory"
+                      className="block px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
+                    >
+                      Inventory
+                    </NavLink>
+                    <NavLink
                       to="/business-settings"
                       className="block px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
                     >
@@ -147,6 +153,13 @@ const Navbar = () => {
                 onClick={() => setIsOpen(false)}
               >
                 Customer
+              </NavLink>
+              <NavLink
+                to="/inventory"
+                className="block px-3 py-2 text-gray-600 hover:bg-gray-50"
+                onClick={() => setIsOpen(false)}
+              >
+                Inventory
               </NavLink>
               <NavLink
                 to="/business-settings"
