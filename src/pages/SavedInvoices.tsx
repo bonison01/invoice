@@ -310,9 +310,9 @@ const SavedInvoices = () => {
         </Dialog>
 
         {/* Hidden invoice for PDF generation */}
-        <div style={{ position: "absolute", left: "-9999px", top: "-9999px" }}>
+        <div style={{ position: "absolute", left: "-9999px", top: "-9999px", width: "210mm", backgroundColor: "white" }}>
           {selectedInvoice && (
-            <div ref={hiddenInvoiceRef}>
+            <div ref={hiddenInvoiceRef} style={{ backgroundColor: "white", padding: "20px" }}>
               <InvoicePreview
                 invoice={selectedInvoice}
                 businessName={businessName}

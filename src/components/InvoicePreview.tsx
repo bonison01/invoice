@@ -162,7 +162,7 @@ const InvoicePreview = ({
               <div className="flex justify-between items-end mt-8 pt-4">
                 {sealUrl && (
                   <div className="text-center">
-                    <img src={sealUrl} alt="Business Seal" className="w-20 h-20 object-contain mx-auto mb-2" />
+                    <img src={sealUrl} alt="Business Seal" className="w-32 h-32 object-contain mx-auto mb-2" />
                     <p className="text-xs text-gray-500">Business Seal</p>
                   </div>
                 )}
