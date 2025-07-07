@@ -312,16 +312,177 @@ const SavedInvoices = () => {
         {/* Hidden invoice for PDF generation */}
         <div style={{ position: "absolute", left: "-9999px", top: "-9999px", width: "210mm", backgroundColor: "white" }}>
           {selectedInvoice && (
-            <div ref={hiddenInvoiceRef} style={{ backgroundColor: "white", padding: "20px" }}>
-              <InvoicePreview
-                invoice={selectedInvoice}
-                businessName={businessName}
-                businessAddress={businessAddress}
-                businessPhone={businessPhone}
-                sealUrl={sealUrl}
-                signatureUrl={signatureUrl}
-                isPrint={true}
-              />
+            <div 
+              ref={hiddenInvoiceRef} 
+              style={{ 
+                backgroundColor: "white", 
+                padding: "20px",
+                fontFamily: "system-ui, -apple-system, sans-serif",
+                color: "#000000"
+              }}
+            >
+              <div className="space-y-6 bg-white p-6 border rounded-lg" style={{ backgroundColor: "white", padding: "24px", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
+                {/* Header */}
+                <div className="border-b pb-6" style={{ borderBottom: "1px solid #e5e7eb", paddingBottom: "24px" }}>
+                  <div className="flex justify-between items-start" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <h1 className="text-2xl font-bold text-gray-900" style={{ fontSize: "24px", fontWeight: "700", color: "#111827", margin: "0" }}>INVOICE</h1>
+                      <p className="text-gray-600" style={{ color: "#4b5563", margin: "4px 0 0 0" }}>#{selectedInvoice.invoiceNumber}</p>
+                    </div>
+                    <div className="text-right" style={{ textAlign: "right" }}>
+                      <div className="text-lg font-semibold" style={{ fontSize: "18px", fontWeight: "600", margin: "0" }}>{businessName}</div>
+                      {businessAddress && (
+                        <div className="text-sm text-gray-600 mt-1 whitespace-pre-line" style={{ fontSize: "14px", color: "#4b5563", marginTop: "4px", whiteSpace: "pre-line" }}>{businessAddress}</div>
+                      )}
+                      {businessPhone && (
+                        <div className="text-sm text-gray-600" style={{ fontSize: "14px", color: "#4b5563" }}>{businessPhone}</div>
+                      )}
+                      <div className="text-sm text-gray-600 mt-2" style={{ fontSize: "14px", color: "#4b5563", marginTop: "8px" }}>Date: {selectedInvoice.date}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Customer Info */}
+                {selectedInvoice.customer && (
+                  <div className="border-b pb-6" style={{ borderBottom: "1px solid #e5e7eb", paddingBottom: "24px" }}>
+                    <h3 className="font-semibold mb-2" style={{ fontWeight: "600", marginBottom: "8px", margin: "0 0 8px 0" }}>Bill To:</h3>
+                    <div className="text-sm" style={{ fontSize: "14px" }}>
+                      <div className="font-medium" style={{ fontWeight: "500" }}>{selectedInvoice.customer.name}</div>
+                      <div>{selectedInvoice.customer.email}</div>
+                      {selectedInvoice.customer.address && (
+                        <div className="mt-1 whitespace-pre-line" style={{ marginTop: "4px", whiteSpace: "pre-line" }}>{selectedInvoice.customer.address}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Items Table */}
+                {selectedInvoice.items.length > 0 && (
+                  <div>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
+                          <th style={{ height: "48px", padding: "16px", textAlign: "left", fontWeight: "500", color: "#6b7280" }}>SL No.</th>
+                          <th style={{ height: "48px", padding: "16px", textAlign: "left", fontWeight: "500", color: "#6b7280" }}>Date</th>
+                          <th style={{ height: "48px", padding: "16px", textAlign: "left", fontWeight: "500", color: "#6b7280" }}>Order ID</th>
+                          <th style={{ height: "48px", padding: "16px", textAlign: "left", fontWeight: "500", color: "#6b7280" }}>Description</th>
+                          <th style={{ height: "48px", padding: "16px", textAlign: "left", fontWeight: "500", color: "#6b7280" }}>Qty</th>
+                          <th style={{ height: "48px", padding: "16px", textAlign: "left", fontWeight: "500", color: "#6b7280" }}>Unit Price</th>
+                          <th style={{ height: "48px", padding: "16px", textAlign: "right", fontWeight: "500", color: "#6b7280" }}>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedInvoice.items.map((item, index) => (
+                          <tr key={item.id} style={{ borderBottom: index === selectedInvoice.items.length - 1 ? "none" : "1px solid #e5e7eb" }}>
+                            <td style={{ padding: "16px", verticalAlign: "middle" }}>{index + 1}</td>
+                            <td style={{ padding: "16px", verticalAlign: "middle" }}>{item.date}</td>
+                            <td style={{ padding: "16px", verticalAlign: "middle" }}>{item.orderId}</td>
+                            <td style={{ padding: "16px", verticalAlign: "middle" }}>{item.description}</td>
+                            <td style={{ padding: "16px", verticalAlign: "middle" }}>{item.quantity}</td>
+                            <td style={{ padding: "16px", verticalAlign: "middle" }}>
+                              <div style={{ display: "flex", alignItems: "center" }}>
+                                ₹{item.unitPrice.toFixed(2)}
+                              </div>
+                            </td>
+                            <td style={{ padding: "16px", verticalAlign: "middle", textAlign: "right" }}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+                                ₹{item.amount.toFixed(2)}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Totals */}
+                <div className="border-t pt-6" style={{ borderTop: "1px solid #e5e7eb", paddingTop: "24px" }}>
+                  <div className="flex justify-end" style={{ display: "flex", justifyContent: "flex-end" }}>
+                    <div className="w-64 space-y-2" style={{ width: "256px" }}>
+                      <div className="flex justify-between" style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                        <span>Subtotal:</span>
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          ₹{selectedInvoice.subtotal.toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="flex justify-between" style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                        <span>Tax ({selectedInvoice.taxRate}%):</span>
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          ₹{selectedInvoice.taxAmount.toFixed(2)}
+                        </div>
+                      </div>
+                      {selectedInvoice.discountAmount > 0 && (
+                        <div className="flex justify-between" style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                          <span>Discount:</span>
+                          <div style={{ display: "flex", alignItems: "center" }}>
+                            -₹{selectedInvoice.discountAmount.toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-bold text-lg border-t pt-2" style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", fontSize: "18px", borderTop: "1px solid #e5e7eb", paddingTop: "8px" }}>
+                        <span>Total:</span>
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          ₹{selectedInvoice.total.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="border-t pt-6 space-y-4" style={{ borderTop: "1px solid #e5e7eb", paddingTop: "24px" }}>
+                  {selectedInvoice.paymentInstructions && (
+                    <div>
+                      <h4 className="font-semibold mb-2" style={{ fontWeight: "600", marginBottom: "8px", margin: "0 0 8px 0" }}>Payment Instructions:</h4>
+                      <p className="text-sm text-gray-600 whitespace-pre-line" style={{ fontSize: "14px", color: "#4b5563", whiteSpace: "pre-line", margin: "0" }}>{selectedInvoice.paymentInstructions}</p>
+                    </div>
+                  )}
+                  {selectedInvoice.thankYouNote && (
+                    <div>
+                      <p className="text-sm text-gray-600 whitespace-pre-line" style={{ fontSize: "14px", color: "#4b5563", whiteSpace: "pre-line", margin: "0" }}>{selectedInvoice.thankYouNote}</p>
+                    </div>
+                  )}
+                  
+                  {/* Seal and Signature */}
+                  {(sealUrl || signatureUrl) && (
+                    <div className="flex justify-between items-end mt-8 pt-4" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "32px", paddingTop: "16px" }}>
+                      {sealUrl && (
+                        <div className="text-center" style={{ textAlign: "center" }}>
+                          <img 
+                            src={sealUrl} 
+                            alt="Business Seal" 
+                            style={{ 
+                              width: "192px", 
+                              height: "192px", 
+                              objectFit: "contain", 
+                              margin: "0 auto 8px auto",
+                              maxWidth: "192px", 
+                              maxHeight: "192px" 
+                            }}
+                          />
+                          <p style={{ fontSize: "12px", color: "#6b7280", margin: "0" }}>Business Seal</p>
+                        </div>
+                      )}
+                      {signatureUrl && (
+                        <div className="text-center" style={{ textAlign: "center" }}>
+                          <img 
+                            src={signatureUrl} 
+                            alt="Signature" 
+                            style={{ 
+                              width: "128px", 
+                              height: "64px", 
+                              objectFit: "contain", 
+                              margin: "0 auto 8px auto" 
+                            }} 
+                          />
+                          <p style={{ fontSize: "12px", color: "#6b7280", margin: "0" }}>Authorized Signature</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
