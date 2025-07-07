@@ -62,6 +62,8 @@ const SavedInvoices = () => {
   const [businessName, setBusinessName] = useState<string>("");
   const [businessAddress, setBusinessAddress] = useState<string>("");
   const [businessPhone, setBusinessPhone] = useState<string>("");
+  const [sealUrl, setSealUrl] = useState<string>("");
+  const [signatureUrl, setSignatureUrl] = useState<string>("");
 
   const hiddenInvoiceRef = createRef<HTMLDivElement>();
 
@@ -88,6 +90,8 @@ const SavedInvoices = () => {
         setBusinessName(data.business_name || "");
         setBusinessAddress(data.business_address || "");
         setBusinessPhone(data.business_phone || "");
+        setSealUrl(data.seal_url || "");
+        setSignatureUrl(data.signature_url || "");
       }
     } catch (error) {
       console.error("Error fetching business settings:", error);
@@ -297,6 +301,8 @@ const SavedInvoices = () => {
                 businessName={businessName}
                 businessAddress={businessAddress}
                 businessPhone={businessPhone}
+                sealUrl={sealUrl}
+                signatureUrl={signatureUrl}
                 isPrint={true}
               />
             )}
@@ -312,6 +318,8 @@ const SavedInvoices = () => {
                 businessName={businessName}
                 businessAddress={businessAddress}
                 businessPhone={businessPhone}
+                sealUrl={sealUrl}
+                signatureUrl={signatureUrl}
                 isPrint={true}
               />
             </div>
