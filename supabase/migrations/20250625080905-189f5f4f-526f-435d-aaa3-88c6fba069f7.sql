@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS public.business_settings (
   business_phone text,
   business_email text,
   logo_url text,
-  payment_instructions text DEFAULT 'Payment due within 30 days. Thank you for your business!',
+  payment_instructions text DEFAULT 'Payment due within 10 days. Thank you for your business!',
   thank_you_note text DEFAULT 'Thank you for choosing our services.',
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),

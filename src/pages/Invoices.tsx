@@ -69,7 +69,7 @@ const Invoices = () => {
     discountValue: 0,
     discountAmount: 0,
     total: 0,
-    paymentInstructions: 'Payment due within 30 days. Thank you for your business!',
+    paymentInstructions: 'Payment due within 10 days. Thank you for your business!',
     thankYouNote: 'Thank you for choosing our services.'
   });
 
@@ -204,7 +204,7 @@ const Invoices = () => {
       ...prev,
       items: [...prev.items, newItem]
     }));
-    
+
     toast({
       title: "Product added!",
       description: `${product.name} has been added to the invoice.`,
@@ -292,7 +292,7 @@ const Invoices = () => {
 
           if (!productError && products && products.length > 0) {
             const product = products[0];
-            
+
             // Update stock using the database function
             const { error: stockError } = await supabase.rpc('update_product_stock', {
               product_id: product.id,

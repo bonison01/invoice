@@ -31,7 +31,7 @@ const BusinessSettings = () => {
     business_address: '',
     business_phone: '',
     business_email: '',
-    payment_instructions: 'Payment due within 30 days. Thank you for your business!',
+    payment_instructions: 'Payment due within 10 days. Thank you for your business!',
     thank_you_note: 'Thank you for choosing our services.',
     seal_url: '',
     signature_url: ''
@@ -68,7 +68,7 @@ const BusinessSettings = () => {
           business_address: data.business_address || '',
           business_phone: data.business_phone || '',
           business_email: data.business_email || '',
-          payment_instructions: data.payment_instructions || 'Payment due within 30 days. Thank you for your business!',
+          payment_instructions: data.payment_instructions || 'Payment due within 10 days. Thank you for your business!',
           thank_you_note: data.thank_you_note || 'Thank you for choosing our services.',
           seal_url: data.seal_url || '',
           signature_url: data.signature_url || ''
@@ -313,9 +313,9 @@ const BusinessSettings = () => {
                   <div className="space-y-2">
                     {settings.seal_url ? (
                       <div className="relative inline-block">
-                        <img 
-                          src={settings.seal_url} 
-                          alt="Business Seal" 
+                        <img
+                          src={settings.seal_url}
+                          alt="Business Seal"
                           className="w-20 h-20 object-contain border rounded"
                         />
                         <Button
@@ -351,9 +351,9 @@ const BusinessSettings = () => {
                   <div className="space-y-2">
                     {settings.signature_url ? (
                       <div className="relative inline-block">
-                        <img 
-                          src={settings.signature_url} 
-                          alt="Signature" 
+                        <img
+                          src={settings.signature_url}
+                          alt="Signature"
                           className="w-32 h-16 object-contain border rounded"
                         />
                         <Button

@@ -26,7 +26,6 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import type { Invoice } from "@/pages/Invoices";
 import html2pdf from "html2pdf.js";
@@ -76,16 +75,13 @@ const SavedInvoices = () => {
 
   const fetchBusinessSettings = async () => {
     if (!user) return;
-
     try {
       const { data, error } = await supabase
         .from("business_settings")
         .select("*")
         .eq("user_id", user.id)
         .single();
-
       if (error && error.code !== "PGRST116") throw error;
-
       if (data) {
         setBusinessName(data.business_name || "");
         setBusinessAddress(data.business_address || "");
@@ -105,7 +101,6 @@ const SavedInvoices = () => {
 
   const fetchSavedInvoices = async () => {
     if (!user) return;
-
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -137,18 +132,6 @@ const SavedInvoices = () => {
     setIsLoading(false);
   };
 
-  const viewInvoice = (savedInvoice: SavedInvoice) => {
-    const invoice: Invoice = convertToInvoice(savedInvoice);
-    setSelectedInvoice(invoice);
-    setShowPreview(true);
-  };
-
-  const downloadInvoice = (invoice: SavedInvoice) => {
-    const invoiceData = convertToInvoice(invoice);
-    setSelectedInvoice(invoiceData);
-    setShouldDownload(true); // triggers the useEffect
-  };
-
   const convertToInvoice = (savedInvoice: SavedInvoice): Invoice => ({
     id: savedInvoice.id,
     invoiceNumber: savedInvoice.invoice_number,
@@ -171,35 +154,70 @@ const SavedInvoices = () => {
     thankYouNote: savedInvoice.thank_you_note || "",
   });
 
+  const viewInvoice = (invoice: SavedInvoice) => {
+    setSelectedInvoice(convertToInvoice(invoice));
+    setShowPreview(true);
+  };
+
+  const downloadInvoice = (invoice: SavedInvoice) => {
+    setSelectedInvoice(convertToInvoice(invoice));
+    setShouldDownload(true);
+  };
+
+  // PDF Generation with image preload
   useEffect(() => {
-    if (shouldDownload && hiddenInvoiceRef.current && selectedInvoice) {
-      html2pdf()
-        .set({
-          margin: 0.5,
-          filename: `Invoice-${selectedInvoice.invoiceNumber}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-        })
-        .from(hiddenInvoiceRef.current)
-        .save()
-        .then(() => setShouldDownload(false))
-        .catch((err) => {
-          console.error("PDF generation error:", err);
-          toast({
-            title: "PDF Error",
-            description: "Failed to generate PDF.",
-            variant: "destructive",
-          });
-          setShouldDownload(false);
+    const generatePDF = async () => {
+      if (!hiddenInvoiceRef.current || !selectedInvoice) return;
+
+      const images = hiddenInvoiceRef.current.querySelectorAll("img");
+      try {
+        await Promise.all(
+          Array.from(images).map(
+            (img) =>
+              new Promise<void>((resolve, reject) => {
+                if (img.complete && img.naturalHeight !== 0) {
+                  resolve();
+                } else {
+                  img.onload = () => resolve();
+                  img.onerror = () => reject();
+                }
+              })
+          )
+        );
+
+        await html2pdf()
+          .set({
+            margin: [10, 10, 10, 10],
+            filename: `Invoice-${selectedInvoice.invoiceNumber}.pdf`,
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, logging: false },
+            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+            pagebreak: { mode: ['css', 'legacy'] },
+          })
+          .from(hiddenInvoiceRef.current)
+          .save();
+
+        setShouldDownload(false);
+      } catch (error) {
+        console.error("PDF generation failed:", error);
+        toast({
+          title: "Error",
+          description: "Failed to generate PDF. Images may not have loaded.",
+          variant: "destructive",
         });
+        setShouldDownload(false);
+      }
+    };
+
+    if (shouldDownload) {
+      generatePDF();
     }
   }, [shouldDownload, hiddenInvoiceRef, selectedInvoice]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-purple-50 flex items-center justify-center">
-        <div>Loading saved invoices...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        Loading saved invoices...
       </div>
     );
   }
@@ -214,7 +232,7 @@ const SavedInvoices = () => {
             Back to Dashboard
           </Button>
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-purple-600">
               Saved Invoices
             </h1>
             <p className="text-gray-600">View and download your saved invoices</p>
@@ -255,29 +273,17 @@ const SavedInvoices = () => {
                   <TableBody>
                     {invoices.map((invoice) => (
                       <TableRow key={invoice.id}>
-                        <TableCell className="font-medium">
-                          {invoice.invoice_number}
-                        </TableCell>
+                        <TableCell>{invoice.invoice_number}</TableCell>
                         <TableCell>{invoice.date}</TableCell>
                         <TableCell>{invoice.customer_name}</TableCell>
                         <TableCell>₹{invoice.total.toFixed(2)}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => viewInvoice(invoice)}
-                            >
-                              <Eye className="w-4 h-4 mr-1" />
-                              View
+                            <Button size="sm" variant="outline" onClick={() => viewInvoice(invoice)}>
+                              <Eye className="w-4 h-4 mr-1" /> View
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => downloadInvoice(invoice)}
-                            >
-                              <Download className="w-4 h-4 mr-1" />
-                              Download
+                            <Button size="sm" variant="outline" onClick={() => downloadInvoice(invoice)}>
+                              <Download className="w-4 h-4 mr-1" /> Download
                             </Button>
                           </div>
                         </TableCell>
@@ -290,11 +296,10 @@ const SavedInvoices = () => {
           </CardContent>
         </Card>
 
+        {/* Invoice Preview Dialog */}
         <Dialog open={showPreview} onOpenChange={setShowPreview}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              {/* <DialogTitle>Invoice Preview</DialogTitle> */}
-            </DialogHeader>
+            <DialogHeader />
             {selectedInvoice && (
               <InvoicePreview
                 invoice={selectedInvoice}
@@ -309,182 +314,31 @@ const SavedInvoices = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Hidden invoice for PDF generation */}
-        <div style={{ position: "absolute", left: "-9999px", top: "-9999px", width: "210mm", backgroundColor: "white" }}>
-          {selectedInvoice && (
-            <div 
-              ref={hiddenInvoiceRef} 
-              style={{ 
-                backgroundColor: "white", 
-                padding: "20px",
-                fontFamily: "system-ui, -apple-system, sans-serif",
-                color: "#000000"
-              }}
-            >
-              <div className="space-y-6 bg-white p-6 border rounded-lg" style={{ backgroundColor: "white", padding: "24px", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
-                {/* Header */}
-                <div className="border-b pb-6" style={{ borderBottom: "1px solid #e5e7eb", paddingBottom: "24px" }}>
-                  <div className="flex justify-between items-start" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div>
-                      <h1 className="text-2xl font-bold text-gray-900" style={{ fontSize: "24px", fontWeight: "700", color: "#111827", margin: "0" }}>INVOICE</h1>
-                      <p className="text-gray-600" style={{ color: "#4b5563", margin: "4px 0 0 0" }}>#{selectedInvoice.invoiceNumber}</p>
-                    </div>
-                    <div className="text-right" style={{ textAlign: "right" }}>
-                      <div className="text-lg font-semibold" style={{ fontSize: "18px", fontWeight: "600", margin: "0" }}>{businessName}</div>
-                      {businessAddress && (
-                        <div className="text-sm text-gray-600 mt-1 whitespace-pre-line" style={{ fontSize: "14px", color: "#4b5563", marginTop: "4px", whiteSpace: "pre-line" }}>{businessAddress}</div>
-                      )}
-                      {businessPhone && (
-                        <div className="text-sm text-gray-600" style={{ fontSize: "14px", color: "#4b5563" }}>{businessPhone}</div>
-                      )}
-                      <div className="text-sm text-gray-600 mt-2" style={{ fontSize: "14px", color: "#4b5563", marginTop: "8px" }}>Date: {selectedInvoice.date}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Customer Info */}
-                {selectedInvoice.customer && (
-                  <div className="border-b pb-6" style={{ borderBottom: "1px solid #e5e7eb", paddingBottom: "24px" }}>
-                    <h3 className="font-semibold mb-2" style={{ fontWeight: "600", marginBottom: "8px", margin: "0 0 8px 0" }}>Bill To:</h3>
-                    <div className="text-sm" style={{ fontSize: "14px" }}>
-                      <div className="font-medium" style={{ fontWeight: "500" }}>{selectedInvoice.customer.name}</div>
-                      <div>{selectedInvoice.customer.email}</div>
-                      {selectedInvoice.customer.address && (
-                        <div className="mt-1 whitespace-pre-line" style={{ marginTop: "4px", whiteSpace: "pre-line" }}>{selectedInvoice.customer.address}</div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Items Table */}
-                {selectedInvoice.items.length > 0 && (
-                  <div>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                      <thead>
-                        <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-                          <th style={{ height: "48px", padding: "16px", textAlign: "left", fontWeight: "500", color: "#6b7280" }}>SL No.</th>
-                          <th style={{ height: "48px", padding: "16px", textAlign: "left", fontWeight: "500", color: "#6b7280" }}>Date</th>
-                          <th style={{ height: "48px", padding: "16px", textAlign: "left", fontWeight: "500", color: "#6b7280" }}>Order ID</th>
-                          <th style={{ height: "48px", padding: "16px", textAlign: "left", fontWeight: "500", color: "#6b7280" }}>Description</th>
-                          <th style={{ height: "48px", padding: "16px", textAlign: "left", fontWeight: "500", color: "#6b7280" }}>Qty</th>
-                          <th style={{ height: "48px", padding: "16px", textAlign: "left", fontWeight: "500", color: "#6b7280" }}>Unit Price</th>
-                          <th style={{ height: "48px", padding: "16px", textAlign: "right", fontWeight: "500", color: "#6b7280" }}>Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectedInvoice.items.map((item, index) => (
-                          <tr key={item.id} style={{ borderBottom: index === selectedInvoice.items.length - 1 ? "none" : "1px solid #e5e7eb" }}>
-                            <td style={{ padding: "16px", verticalAlign: "middle" }}>{index + 1}</td>
-                            <td style={{ padding: "16px", verticalAlign: "middle" }}>{item.date}</td>
-                            <td style={{ padding: "16px", verticalAlign: "middle" }}>{item.orderId}</td>
-                            <td style={{ padding: "16px", verticalAlign: "middle" }}>{item.description}</td>
-                            <td style={{ padding: "16px", verticalAlign: "middle" }}>{item.quantity}</td>
-                            <td style={{ padding: "16px", verticalAlign: "middle" }}>
-                              <div style={{ display: "flex", alignItems: "center" }}>
-                                ₹{item.unitPrice.toFixed(2)}
-                              </div>
-                            </td>
-                            <td style={{ padding: "16px", verticalAlign: "middle", textAlign: "right" }}>
-                              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
-                                ₹{item.amount.toFixed(2)}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {/* Totals */}
-                <div className="border-t pt-6" style={{ borderTop: "1px solid #e5e7eb", paddingTop: "24px" }}>
-                  <div className="flex justify-end" style={{ display: "flex", justifyContent: "flex-end" }}>
-                    <div className="w-64 space-y-2" style={{ width: "256px" }}>
-                      <div className="flex justify-between" style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                        <span>Subtotal:</span>
-                        <div style={{ display: "flex", alignItems: "center" }}>
-                          ₹{selectedInvoice.subtotal.toFixed(2)}
-                        </div>
-                      </div>
-                      <div className="flex justify-between" style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                        <span>Tax ({selectedInvoice.taxRate}%):</span>
-                        <div style={{ display: "flex", alignItems: "center" }}>
-                          ₹{selectedInvoice.taxAmount.toFixed(2)}
-                        </div>
-                      </div>
-                      {selectedInvoice.discountAmount > 0 && (
-                        <div className="flex justify-between" style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                          <span>Discount:</span>
-                          <div style={{ display: "flex", alignItems: "center" }}>
-                            -₹{selectedInvoice.discountAmount.toFixed(2)}
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex justify-between font-bold text-lg border-t pt-2" style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", fontSize: "18px", borderTop: "1px solid #e5e7eb", paddingTop: "8px" }}>
-                        <span>Total:</span>
-                        <div style={{ display: "flex", alignItems: "center" }}>
-                          ₹{selectedInvoice.total.toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="border-t pt-6 space-y-4" style={{ borderTop: "1px solid #e5e7eb", paddingTop: "24px" }}>
-                  {selectedInvoice.paymentInstructions && (
-                    <div>
-                      <h4 className="font-semibold mb-2" style={{ fontWeight: "600", marginBottom: "8px", margin: "0 0 8px 0" }}>Payment Instructions:</h4>
-                      <p className="text-sm text-gray-600 whitespace-pre-line" style={{ fontSize: "14px", color: "#4b5563", whiteSpace: "pre-line", margin: "0" }}>{selectedInvoice.paymentInstructions}</p>
-                    </div>
-                  )}
-                  {selectedInvoice.thankYouNote && (
-                    <div>
-                      <p className="text-sm text-gray-600 whitespace-pre-line" style={{ fontSize: "14px", color: "#4b5563", whiteSpace: "pre-line", margin: "0" }}>{selectedInvoice.thankYouNote}</p>
-                    </div>
-                  )}
-                  
-                  {/* Seal and Signature */}
-                  {(sealUrl || signatureUrl) && (
-                    <div className="flex justify-between items-end mt-8 pt-4" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "32px", paddingTop: "16px" }}>
-                      {sealUrl && (
-                        <div className="text-center" style={{ textAlign: "center" }}>
-                          <img 
-                            src={sealUrl} 
-                            alt="Business Seal" 
-                            style={{ 
-                              width: "192px", 
-                              height: "192px", 
-                              objectFit: "contain", 
-                              margin: "0 auto 8px auto",
-                              maxWidth: "192px", 
-                              maxHeight: "192px" 
-                            }}
-                          />
-                          <p style={{ fontSize: "12px", color: "#6b7280", margin: "0" }}>Business Seal</p>
-                        </div>
-                      )}
-                      {signatureUrl && (
-                        <div className="text-center" style={{ textAlign: "center" }}>
-                          <img 
-                            src={signatureUrl} 
-                            alt="Signature" 
-                            style={{ 
-                              width: "128px", 
-                              height: "64px", 
-                              objectFit: "contain", 
-                              margin: "0 auto 8px auto" 
-                            }} 
-                          />
-                          <p style={{ fontSize: "12px", color: "#6b7280", margin: "0" }}>Authorized Signature</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+        {/* Hidden Invoice for PDF Generation */}
+        <div
+          style={{
+            position: "absolute",
+            left: "-9999px",
+            top: "-9999px",
+            width: "210mm",
+            backgroundColor: "white",
+            padding: "10mm",
+            boxSizing: "border-box",
+          }}
+        >
+          <div ref={hiddenInvoiceRef}>
+            {selectedInvoice && (
+              <InvoicePreview
+                invoice={selectedInvoice}
+                businessName={businessName}
+                businessAddress={businessAddress}
+                businessPhone={businessPhone}
+                sealUrl={sealUrl}
+                signatureUrl={signatureUrl}
+                isPrint={true}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

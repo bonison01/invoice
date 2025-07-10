@@ -87,16 +87,18 @@ const InvoicePreview = ({
                       <TableCell className="text-xs">{item.description}</TableCell>
                       <TableCell className="text-xs">{item.quantity}</TableCell>
                       <TableCell className="text-xs">
-                        <div className="flex items-center">
-                          <IndianRupee className="w-3 h-3 mr-1" />
-                          {item.unitPrice.toFixed(2)}
-                        </div>
+                        <span className="inline-flex items-baseline">
+                          <IndianRupee className="w-3 h-3 mr-1" style={{ verticalAlign: 'baseline' }} />
+                          <span>{item.unitPrice.toFixed(2)}</span>
+                        </span>
+
                       </TableCell>
                       <TableCell className="text-xs text-right">
-                        <div className="flex items-center justify-end">
-                          <IndianRupee className="w-3 h-3 mr-1" />
-                          {item.amount.toFixed(2)}
-                        </div>
+                        <span className="inline-flex items-baseline">
+                          <IndianRupee className="w-3 h-3 mr-1" style={{ verticalAlign: 'baseline' }} />
+                          <span>{item.unitPrice.toFixed(2)}</span>
+                        </span>
+
                       </TableCell>
                     </TableRow>
                   ))}
@@ -144,42 +146,70 @@ const InvoicePreview = ({
           </div>
 
           {/* Footer */}
-          <div className="border-t pt-6 space-y-4">
-            {invoice.paymentInstructions && (
-              <div>
-                <h4 className="font-semibold mb-2">Payment Instructions:</h4>
-                <p className="text-sm text-gray-600 whitespace-pre-line">{invoice.paymentInstructions}</p>
+          <div className="border-t pt-6 relative">
+            {/* Overlayed Seal (Larger and Centered Above Content) */}
+            {sealUrl && (
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+                <img
+                  src={sealUrl}
+                  alt="Business Seal"
+                  style={{ width: '300px', height: '300px', objectFit: 'contain' }}
+                />
               </div>
             )}
+
+            {/* Main Content Row */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:space-x-8 relative z-10">
+              {/* Left Column: Payment Instructions + UPI + Bank Details */}
+              <div className="flex-1 space-y-4">
+                {invoice.paymentInstructions && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Payment Instructions:</h4>
+                    <p className="text-sm text-gray-600 whitespace-pre-line">{invoice.paymentInstructions}</p>
+                  </div>
+                )}
+
+                {/* UPI */}
+                <div>
+                  <h4 className="font-semibold mb-1">Payment UPI:</h4>
+                  <p className="text-sm text-gray-700">nilakumar888-1@oksbi</p>
+                </div>
+
+                {/* Bank Details */}
+                <div>
+                  <h4 className="font-semibold mb-1">Bank Details:</h4>
+                  <p className="text-sm text-gray-700 whitespace-pre-line">
+                    JUSTMATENG SERVICE PRIVATE LIMITED
+                    {"\n"}A/C No: 43261950171
+                    {"\n"}IFSC: SBIN0005320
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Column: Signature */}
+              {signatureUrl && (
+                <div className="w-64 text-center mt-6 md:mt-0 relative">
+                  <div className="relative h-40 flex items-end justify-center">
+                    <img
+                      src={signatureUrl}
+                      alt="Signature"
+                      className="absolute top-0 left-1/2 transform -translate-x-1/2 object-contain w-[300px] h-[200px] opacity-90"
+                    />
+                    <p className="text-xs text-gray-500 z-10">Authorized Signature</p>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Thank You Note */}
             {invoice.thankYouNote && (
-              <div>
+              <div className="mt-6">
                 <p className="text-sm text-gray-600 whitespace-pre-line">{invoice.thankYouNote}</p>
               </div>
             )}
-            
-            {/* Seal and Signature */}
-            {(sealUrl || signatureUrl) && (
-              <div className="flex justify-between items-end mt-8 pt-4">
-                {sealUrl && (
-                  <div className="text-center">
-                    <img 
-                      src={sealUrl} 
-                      alt="Business Seal" 
-                      className="w-48 h-48 object-contain mx-auto mb-2" 
-                      style={{ maxWidth: '192px', maxHeight: '192px' }}
-                    />
-                    <p className="text-xs text-gray-500">Business Seal</p>
-                  </div>
-                )}
-                {signatureUrl && (
-                  <div className="text-center">
-                    <img src={signatureUrl} alt="Signature" className="w-32 h-16 object-contain mx-auto mb-2" />
-                    <p className="text-xs text-gray-500">Authorized Signature</p>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
+
         </div>
       </CardContent>
     </Card>
