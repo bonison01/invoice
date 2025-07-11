@@ -1,4 +1,5 @@
-import { useState, useEffect, createRef } from "react";
+// src/pages/SavedInvoices.tsx
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,13 +23,13 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Download, Eye } from "lucide-react";
 import InvoicePreview from "@/components/InvoicePreview";
+import InvoiceDownload from "@/components/InvoiceDownload";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
 } from "@/components/ui/dialog";
 import type { Invoice } from "@/pages/Invoices";
-import html2pdf from "html2pdf.js";
 
 interface SavedInvoice {
   id: string;
@@ -54,7 +55,6 @@ const SavedInvoices = () => {
   const { user } = useAuth();
   const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
   const [shouldDownload, setShouldDownload] = useState(false);
 
@@ -63,8 +63,6 @@ const SavedInvoices = () => {
   const [businessPhone, setBusinessPhone] = useState<string>("");
   const [sealUrl, setSealUrl] = useState<string>("");
   const [signatureUrl, setSignatureUrl] = useState<string>("");
-
-  const hiddenInvoiceRef = createRef<HTMLDivElement>();
 
   useEffect(() => {
     if (user) {
@@ -90,7 +88,6 @@ const SavedInvoices = () => {
         setSignatureUrl(data.signature_url || "");
       }
     } catch (error) {
-      console.error("Error fetching business settings:", error);
       toast({
         title: "Error",
         description: "Failed to load business settings.",
@@ -101,7 +98,6 @@ const SavedInvoices = () => {
 
   const fetchSavedInvoices = async () => {
     if (!user) return;
-    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from("saved_invoices")
@@ -122,14 +118,12 @@ const SavedInvoices = () => {
 
       setInvoices(processedData);
     } catch (error) {
-      console.error("Error fetching saved invoices:", error);
       toast({
         title: "Error",
         description: "Failed to load saved invoices.",
         variant: "destructive",
       });
     }
-    setIsLoading(false);
   };
 
   const convertToInvoice = (savedInvoice: SavedInvoice): Invoice => ({
@@ -163,64 +157,6 @@ const SavedInvoices = () => {
     setSelectedInvoice(convertToInvoice(invoice));
     setShouldDownload(true);
   };
-
-  // PDF Generation with image preload
-  useEffect(() => {
-    const generatePDF = async () => {
-      if (!hiddenInvoiceRef.current || !selectedInvoice) return;
-
-      const images = hiddenInvoiceRef.current.querySelectorAll("img");
-      try {
-        await Promise.all(
-          Array.from(images).map(
-            (img) =>
-              new Promise<void>((resolve, reject) => {
-                if (img.complete && img.naturalHeight !== 0) {
-                  resolve();
-                } else {
-                  img.onload = () => resolve();
-                  img.onerror = () => reject();
-                }
-              })
-          )
-        );
-
-        await html2pdf()
-          .set({
-            margin: [10, 10, 10, 10],
-            filename: `Invoice-${selectedInvoice.invoiceNumber}.pdf`,
-            image: { type: "jpeg", quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, logging: false },
-            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-            pagebreak: { mode: ['css', 'legacy'] },
-          })
-          .from(hiddenInvoiceRef.current)
-          .save();
-
-        setShouldDownload(false);
-      } catch (error) {
-        console.error("PDF generation failed:", error);
-        toast({
-          title: "Error",
-          description: "Failed to generate PDF. Images may not have loaded.",
-          variant: "destructive",
-        });
-        setShouldDownload(false);
-      }
-    };
-
-    if (shouldDownload) {
-      generatePDF();
-    }
-  }, [shouldDownload, hiddenInvoiceRef, selectedInvoice]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading saved invoices...
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-purple-50">
@@ -314,32 +250,19 @@ const SavedInvoices = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Hidden Invoice for PDF Generation */}
-        <div
-          style={{
-            position: "absolute",
-            left: "-9999px",
-            top: "-9999px",
-            width: "210mm",
-            backgroundColor: "white",
-            padding: "10mm",
-            boxSizing: "border-box",
-          }}
-        >
-          <div ref={hiddenInvoiceRef}>
-            {selectedInvoice && (
-              <InvoicePreview
-                invoice={selectedInvoice}
-                businessName={businessName}
-                businessAddress={businessAddress}
-                businessPhone={businessPhone}
-                sealUrl={sealUrl}
-                signatureUrl={signatureUrl}
-                isPrint={true}
-              />
-            )}
-          </div>
-        </div>
+        {/* Hidden PDF generator */}
+        {selectedInvoice && (
+          <InvoiceDownload
+            invoice={selectedInvoice}
+            businessName={businessName}
+            businessAddress={businessAddress}
+            businessPhone={businessPhone}
+            sealUrl={sealUrl}
+            signatureUrl={signatureUrl}
+            triggerDownload={shouldDownload}
+            onComplete={() => setShouldDownload(false)}
+          />
+        )}
       </div>
     </div>
   );

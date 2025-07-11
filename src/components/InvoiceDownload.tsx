@@ -1,31 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+// src/components/InvoiceDownload.tsx
+import { useEffect, useRef } from "react";
 import html2pdf from "html2pdf.js";
-
-interface InvoiceItem {
-    date: string;
-    orderId: string;
-    description: string;
-    quantity: number;
-    unitPrice: number;
-    amount: number;
-}
-
-interface Invoice {
-    invoiceNumber: string;
-    date: string;
-    customerName: string;
-    customerEmail: string;
-    customerAddress: string;
-    items: InvoiceItem[];
-    subtotal: number;
-    taxRate: number;
-    taxAmount: number;
-    discount: number;
-    discountAmount: number;
-    total: number;
-    paymentInstructions?: string;
-    thankYouNote?: string;
-}
+import type { Invoice } from "@/pages/Invoices";
 
 interface InvoiceDownloadProps {
     invoice: Invoice;
@@ -34,214 +10,221 @@ interface InvoiceDownloadProps {
     businessPhone?: string;
     sealUrl?: string;
     signatureUrl?: string;
+    triggerDownload: boolean;
+    onComplete: () => void;
 }
 
-const InvoiceDownload: React.FC<InvoiceDownloadProps> = ({
+const InvoiceDownload = ({
     invoice,
     businessName,
     businessAddress,
     businessPhone,
     sealUrl,
     signatureUrl,
-}) => {
-    const invoiceRef = useRef<HTMLDivElement>(null);
-    const [loading, setLoading] = useState(false);
+    triggerDownload,
+    onComplete,
+}: InvoiceDownloadProps) => {
+    const hiddenRef = useRef<HTMLDivElement>(null);
 
-    // Helper: preload all images in the invoice before PDF
-    const preloadImages = (): Promise<void[]> => {
-        if (!invoiceRef.current) return Promise.resolve([]);
-        const imgs = Array.from(invoiceRef.current.querySelectorAll("img"));
-        return Promise.all(
-            imgs.map(
-                (img) =>
-                    new Promise<void>((res, rej) => {
-                        if (img.complete && img.naturalHeight !== 0) return res();
-                        img.onload = () => res();
-                        img.onerror = () => res(); // resolve anyway to avoid hanging
+    useEffect(() => {
+        const generatePDF = async () => {
+            if (!triggerDownload || !hiddenRef.current) return;
+
+            try {
+                const images = hiddenRef.current.querySelectorAll("img");
+                await Promise.all(
+                    Array.from(images).map(
+                        (img) =>
+                            new Promise<void>((resolve, reject) => {
+                                if (img.complete && img.naturalHeight !== 0) {
+                                    resolve();
+                                } else {
+                                    img.onload = () => resolve();
+                                    img.onerror = () => reject(new Error("Image failed to load"));
+                                }
+                            })
+                    )
+                );
+
+                await html2pdf()
+                    .set({
+                        margin: [10, 10, 10, 10], // top, right, bottom, left in mm
+                        filename: `Invoice-${invoice.invoiceNumber}.pdf`,
+                        image: { type: "jpeg", quality: 0.98 },
+                        html2canvas: { scale: 2, useCORS: true },
+                        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
                     })
-            )
-        );
-    };
+                    .from(hiddenRef.current)
+                    .save();
+            } catch (err) {
+                console.error("PDF generation failed:", err);
+            } finally {
+                onComplete();
+            }
+        };
 
-    const downloadPdf = async () => {
-        if (!invoiceRef.current) return;
-        setLoading(true);
-
-        try {
-            await preloadImages();
-
-            const opt = {
-                margin: [10, 10, 10, 10],
-                filename: `Invoice-${invoice.invoiceNumber}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, logging: false },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['css', 'legacy'], before: '.page-break' },
-            };
-
-            await html2pdf()
-                .set(opt)
-                .from(invoiceRef.current)
-                .save();
-        } catch (error) {
-            alert("Error generating PDF. Please try again.");
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        generatePDF();
+    }, [triggerDownload]);
 
     return (
-        <div className="min-h-screen p-8 bg-gray-50">
-            <button
-                onClick={downloadPdf}
-                disabled={loading}
-                className="mb-6 px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
-            >
-                {loading ? "Preparing PDF..." : "Download Invoice PDF"}
-            </button>
+        <div
+            style={{
+                position: "absolute",
+                left: "-9999px",
+                top: "-9999px",
+                width: "210mm",
+                backgroundColor: "white",
+                padding: "20mm",
+                fontFamily: "Arial, sans-serif",
+                color: "#111",
+                fontSize: "12px",
+                lineHeight: 1.6,
+            }}
+        >
+            <div ref={hiddenRef}>
 
-            <div
-                ref={invoiceRef}
-                className="bg-white p-8 text-sm leading-tight shadow-lg max-w-[210mm] mx-auto"
-                style={{ width: "210mm" }}
-            >
-                {/* Invoice Header */}
-                <header className="flex justify-between mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold">INVOICE</h1>
-                        <p className="text-lg font-semibold mt-1">#{invoice.invoiceNumber}</p>
+                {/* Header */}
+                <div style={{ borderBottom: "1px solid #ccc", paddingBottom: "16px", marginBottom: "24px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <div>
+                            <h1 style={{ fontSize: "24px", fontWeight: "bold" }}>INVOICE</h1>
+                            <p style={{ color: "#555" }}>#{invoice.invoiceNumber}</p>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                            <div style={{ fontWeight: "bold", fontSize: "14px" }}>{businessName}</div>
+                            {businessAddress && <div style={{ whiteSpace: "pre-line", fontSize: "12px" }}>{businessAddress}</div>}
+                            {businessPhone && <div>{businessPhone}</div>}
+                            <div style={{ marginTop: "5px" }}>Date: {invoice.date}</div>
+                        </div>
                     </div>
-                    <div className="text-right">
-                        <div className="font-bold text-xl">{businessName}</div>
-                        {businessAddress && <div className="whitespace-pre-line">{businessAddress}</div>}
-                        {businessPhone && <div>{businessPhone}</div>}
-                        <div className="mt-4">Date: {invoice.date}</div>
-                    </div>
-                </header>
+                </div>
 
                 {/* Customer Info */}
-                <section className="mb-6">
-                    <h2 className="font-semibold text-lg mb-1">Bill To:</h2>
+                <div style={{ marginBottom: "24px" }}>
+                    <h3 style={{ fontWeight: "bold", marginBottom: "6px" }}>Bill To:</h3>
                     <div>
-                        <div className="font-semibold">{invoice.customerName}</div>
-                        <div>{invoice.customerEmail}</div>
-                        <div className="whitespace-pre-line">{invoice.customerAddress}</div>
+                        <div style={{ fontWeight: 600 }}>{invoice.customer.name}</div>
+                        <div>{invoice.customer.email}</div>
+                        {invoice.customer.address && (
+                            <div style={{ whiteSpace: "pre-line" }}>{invoice.customer.address}</div>
+                        )}
                     </div>
-                </section>
+                </div>
 
                 {/* Items Table */}
-                <section className="mb-6">
-                    <table className="w-full border-collapse border border-gray-300 text-xs">
-                        <thead>
-                            <tr className="bg-gray-200">
-                                <th className="border border-gray-300 px-2 py-1">SL No.</th>
-                                <th className="border border-gray-300 px-2 py-1">Date</th>
-                                <th className="border border-gray-300 px-2 py-1">Order ID</th>
-                                <th className="border border-gray-300 px-2 py-1">Description</th>
-                                <th className="border border-gray-300 px-2 py-1 text-right">Quantity</th>
-                                <th className="border border-gray-300 px-2 py-1 text-right">Unit Price</th>
-                                <th className="border border-gray-300 px-2 py-1 text-right">Amount</th>
+                <table
+                    width="100%"
+                    cellPadding={6}
+                    style={{
+                        borderCollapse: "collapse",
+                        marginBottom: "28px",
+                        fontSize: "11px",
+                    }}
+                >
+                    <thead>
+                        <tr style={{ borderBottom: "1px solid #ccc", backgroundColor: "#f4f4f4" }}>
+                            <th align="left">SL No.</th>
+                            <th align="left">Date</th>
+                            <th align="left">Order ID</th>
+                            <th align="left">Description</th>
+                            <th align="right">Qty</th>
+                            <th align="right">Unit Price</th>
+                            <th align="right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {invoice.items.map((item, index) => (
+                            <tr key={item.id || index} style={{ borderBottom: "1px solid #eee" }}>
+                                <td>{index + 1}</td>
+                                <td>{item.date}</td>
+                                <td>{item.orderId}</td>
+                                <td>{item.description}</td>
+                                <td align="right">{item.quantity}</td>
+                                <td align="right">₹{item.unitPrice.toFixed(2)}</td>
+                                <td align="right">₹{(item.unitPrice * item.quantity).toFixed(2)}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {invoice.items.map((item, i) => (
-                                <tr key={i} className="page-break-inside-avoid">
-                                    <td className="border border-gray-300 px-2 py-1 text-center">{i + 1}</td>
-                                    <td className="border border-gray-300 px-2 py-1">{item.date}</td>
-                                    <td className="border border-gray-300 px-2 py-1">{item.orderId}</td>
-                                    <td className="border border-gray-300 px-2 py-1">{item.description}</td>
-                                    <td className="border border-gray-300 px-2 py-1 text-right">{item.quantity}</td>
-                                    <td className="border border-gray-300 px-2 py-1 text-right">
-                                        <span className="inline-flex items-baseline">
-                                            <span className="rupee-symbol">₹</span>
-                                            {item.unitPrice.toFixed(2)}
-                                        </span>
-                                    </td>
-                                    <td className="border border-gray-300 px-2 py-1 text-right">
-                                        <span className="inline-flex items-baseline">
-                                            <span className="rupee-symbol">₹</span>
-                                            {item.amount.toFixed(2)}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </section>
+                        ))}
+                    </tbody>
+                </table>
 
                 {/* Totals */}
-                <section className="mb-6 flex justify-end">
-                    <table className="text-xs border-collapse border border-gray-300 w-64">
-                        <tbody>
-                            <tr>
-                                <td className="border border-gray-300 px-2 py-1 font-semibold">Subtotal:</td>
-                                <td className="border border-gray-300 px-2 py-1 text-right">
-                                    <span className="inline-flex items-baseline">
-                                        <span className="rupee-symbol">₹</span>
-                                        {invoice.subtotal.toFixed(2)}
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="border border-gray-300 px-2 py-1 font-semibold">Tax ({invoice.taxRate}%):</td>
-                                <td className="border border-gray-300 px-2 py-1 text-right">
-                                    <span className="inline-flex items-baseline">
-                                        <span className="rupee-symbol">₹</span>
-                                        {invoice.taxAmount.toFixed(2)}
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="border border-gray-300 px-2 py-1 font-semibold">Discount:</td>
-                                <td className="border border-gray-300 px-2 py-1 text-right">
-                                    <span className="inline-flex items-baseline">
-                                        <span className="rupee-symbol">₹</span>
-                                        {invoice.discountAmount.toFixed(2)}
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr className="font-bold">
-                                <td className="border border-gray-300 px-2 py-1 font-semibold">Total:</td>
-                                <td className="border border-gray-300 px-2 py-1 text-right">
-                                    <span className="inline-flex items-baseline">
-                                        <span className="rupee-symbol">₹</span>
-                                        {invoice.total.toFixed(2)}
-                                    </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </section>
+                <div style={{ textAlign: "right", marginBottom: "30px", fontSize: "13px" }}>
+                    <div style={{ marginBottom: "4px" }}>Subtotal: ₹{invoice.subtotal.toFixed(2)}</div>
+                    <div style={{ marginBottom: "4px" }}>
+                        Tax ({invoice.taxRate}%): ₹{invoice.taxAmount.toFixed(2)}
+                    </div>
+                    {invoice.discountAmount > 0 && (
+                        <div style={{ marginBottom: "4px" }}>Discount: -₹{invoice.discountAmount.toFixed(2)}</div>
+                    )}
+                    <div style={{ fontWeight: "bold", fontSize: "14px", marginTop: "6px" }}>
+                        Total: ₹{invoice.total.toFixed(2)}
+                    </div>
+                </div>
 
-                {/* Payment Instructions */}
-                {invoice.paymentInstructions && (
-                    <section className="mb-6">
-                        <h3 className="font-semibold text-sm mb-1">Payment Instructions</h3>
-                        <p className="whitespace-pre-line">{invoice.paymentInstructions}</p>
-                    </section>
-                )}
-
-                {/* Thank You Note */}
-                {invoice.thankYouNote && (
-                    <section className="mb-6 text-center italic text-sm">
-                        {invoice.thankYouNote}
-                    </section>
-                )}
-
-                {/* Seal & Signature */}
-                <section className="flex justify-between items-center mt-10">
-                    {sealUrl && <img src={sealUrl} alt="Seal" className="h-20" />}
-                    {signatureUrl && (
-                        <div className="text-center">
-                            <img src={signatureUrl} alt="Signature" className="h-12" />
-                            <div className="text-xs mt-1">Authorized Signature</div>
+                {/* Footer */}
+                <div style={{ borderTop: "1px solid #ccc", paddingTop: "20px", marginTop: "30px", position: "relative" }}>
+                    {/* Seal Image Centered */}
+                    {sealUrl && (
+                        <div
+                            style={{
+                                position: "absolute",
+                                top: "-60px",
+                                left: "50%",
+                                transform: "translateX(-50%)",
+                                opacity: 1,
+                                zIndex: 0,
+                            }}
+                        >
+                            <img src={sealUrl} alt="Seal" style={{ width: "300px", height: "300px", objectFit: "contain" }} />
                         </div>
                     )}
-                </section>
-            </div>
 
-            {/* PAGE BREAKS: You can add a div with className="page-break" to force breaks */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        {/* Payment Info */}
+                        <div style={{ flex: 1, marginRight: "40px", zIndex: 1 }}>
+                            {invoice.paymentInstructions && (
+                                <div style={{ marginBottom: "14px" }}>
+                                    <h4 style={{ fontWeight: "bold" }}>Payment Instructions:</h4>
+                                    <p style={{ whiteSpace: "pre-line" }}>{invoice.paymentInstructions}</p>
+                                </div>
+                            )}
+
+                            <div style={{ marginBottom: "10px" }}>
+                                <h4 style={{ fontWeight: "bold" }}>Payment UPI:</h4>
+                                <p>nilakumar888-1@oksbi</p>
+                            </div>
+
+                            <div>
+                                <h4 style={{ fontWeight: "bold" }}>Bank Details:</h4>
+                                <p style={{ whiteSpace: "pre-line" }}>
+                                    JUSTMATENG SERVICE PRIVATE LIMITED{"\n"}
+                                    A/C No: 43261950171{"\n"}
+                                    IFSC: SBIN0005320
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Signature */}
+                        {signatureUrl && (
+                            <div style={{ width: "180px", textAlign: "center", zIndex: 1 }}>
+                                <img
+                                    src={signatureUrl}
+                                    alt="Signature"
+                                    style={{ width: "200%", maxHeight: "150px", objectFit: "contain", opacity: 1 }}
+                                />
+                                <p style={{ fontSize: "10px", color: "#666", marginTop: "4px" }}>Authorized Signature</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Thank You Note */}
+                    {invoice.thankYouNote && (
+                        <div style={{ marginTop: "20px", fontSize: "12px", color: "#555", whiteSpace: "pre-line" }}>
+                            {invoice.thankYouNote}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 };
