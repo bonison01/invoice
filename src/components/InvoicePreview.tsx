@@ -172,7 +172,7 @@ const InvoicePreview = ({
                 {/* UPI */}
                 <div>
                   <h4 className="font-semibold mb-1">Payment UPI:</h4>
-                  <p className="text-sm text-gray-700">nilakumar888-1@oksbi</p>
+                  <p className="text-sm text-gray-700">doeasy01-4@okaxis</p>
                 </div>
 
                 {/* Bank Details */}

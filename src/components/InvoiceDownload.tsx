@@ -191,7 +191,7 @@ const InvoiceDownload = ({
 
                             <div style={{ marginBottom: "10px" }}>
                                 <h4 style={{ fontWeight: "bold" }}>Payment UPI:</h4>
-                                <p>nilakumar888-1@oksbi</p>
+                                <p>doeasy01-4@okaxis</p>
                             </div>
 
                             <div>
