@@ -71,6 +71,38 @@ const SavedInvoices = () => {
     }
   }, [user]);
 
+
+  const deleteInvoice = async (invoiceId: string) => {
+  if (!user) return;
+  const confirmed = window.confirm("Are you sure you want to delete this invoice?");
+  if (!confirmed) return;
+
+  try {
+    const { error } = await supabase
+      .from("saved_invoices")
+      .delete()
+      .eq("id", invoiceId)
+      .eq("user_id", user.id);
+
+    if (error) throw error;
+
+    toast({
+      title: "Success",
+      description: "Invoice deleted successfully.",
+    });
+
+    // Refresh list
+    setInvoices((prev) => prev.filter((inv) => inv.id !== invoiceId));
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to delete invoice.",
+      variant: "destructive",
+    });
+  }
+};
+
+
   const fetchBusinessSettings = async () => {
     if (!user) return;
     try {
@@ -207,25 +239,33 @@ const SavedInvoices = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {invoices.map((invoice) => (
-                      <TableRow key={invoice.id}>
-                        <TableCell>{invoice.invoice_number}</TableCell>
-                        <TableCell>{invoice.date}</TableCell>
-                        <TableCell>{invoice.customer_name}</TableCell>
-                        <TableCell>₹{invoice.total.toFixed(2)}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline" onClick={() => viewInvoice(invoice)}>
-                              <Eye className="w-4 h-4 mr-1" /> View
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => downloadInvoice(invoice)}>
-                              <Download className="w-4 h-4 mr-1" /> Download
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
+  {invoices.map((invoice) => (
+    <TableRow key={invoice.id}>
+      <TableCell>{invoice.invoice_number}</TableCell>
+      <TableCell>{invoice.date}</TableCell>
+      <TableCell>{invoice.customer_name}</TableCell>
+      <TableCell>₹{invoice.total.toFixed(2)}</TableCell>
+      <TableCell>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => viewInvoice(invoice)}>
+            <Eye className="w-4 h-4 mr-1" /> View
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => downloadInvoice(invoice)}>
+            <Download className="w-4 h-4 mr-1" /> Download
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => deleteInvoice(invoice.id)} // Make sure `invoice` is from `.map`
+          >
+            Delete
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
+
                 </Table>
               </div>
             )}

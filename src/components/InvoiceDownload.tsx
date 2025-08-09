@@ -48,7 +48,7 @@ const InvoiceDownload = ({
 
                 await html2pdf()
                     .set({
-                        margin: [10, 10, 10, 10], // top, right, bottom, left in mm
+                        margin: [10, 10, 16, 10], // top, right, bottom, left in mm
                         filename: `Invoice-${invoice.invoiceNumber}.pdf`,
                         image: { type: "jpeg", quality: 0.98 },
                         html2canvas: { scale: 2, useCORS: true },
@@ -74,7 +74,7 @@ const InvoiceDownload = ({
                 top: "-9999px",
                 width: "210mm",
                 backgroundColor: "white",
-                padding: "20mm",
+                padding: "50mm",
                 fontFamily: "Arial, sans-serif",
                 color: "#111",
                 fontSize: "12px",
