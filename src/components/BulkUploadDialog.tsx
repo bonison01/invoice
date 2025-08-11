@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import * as XLSX from "xlsx";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,98 +22,91 @@ const BulkUploadDialog = ({ open, onOpenChange, onItemsAdd }: BulkUploadDialogPr
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    if (selectedFile && selectedFile.type === 'text/csv') {
+    if (selectedFile && selectedFile.name.endsWith('.xlsx')) {
       setFile(selectedFile);
     } else {
       toast({
         title: "Invalid file type",
-        description: "Please select a CSV file.",
+        description: "Please upload an Excel (.xlsx) file.",
         variant: "destructive",
       });
     }
-  };
-
-  const parseCSV = (csvText: string): InvoiceItem[] => {
-    const lines = csvText.split('\n');
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    
-    // Expected column order: sl_no, date, order_id, description, quantity, unit_price
-    const expectedHeaders = ['sl_no', 'date', 'order_id', 'description', 'quantity', 'unit_price'];
-    
-    const items: InvoiceItem[] = [];
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-
-      const values = line.split(',').map(v => v.trim());
-      
-      // Map values by position, not by header names
-      const slNo = values[0] || '';
-      const date = values[1] || new Date().toISOString().split('T')[0];
-      const orderId = values[2] || '';
-      const description = values[3] || '';
-      const quantity = parseInt(values[4]) || 1;
-      const unitPrice = parseFloat(values[5]) || 0;
-
-      // Validate required fields
-      if (!description) {
-        throw new Error(`Row ${i + 1}: Description is required`);
-      }
-
-      items.push({
-        id: `bulk-${Date.now()}-${i}`,
-        date,
-        orderId,
-        description,
-        quantity,
-        unitPrice,
-        amount: quantity * unitPrice,
-      });
-    }
-
-    return items;
   };
 
   const handleUpload = async () => {
     if (!file) return;
 
     setIsUploading(true);
+
     try {
-      const csvText = await file.text();
-      const items = parseCSV(csvText);
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' }); // Each row is an object
+
+      const items: InvoiceItem[] = rows.map((row: any, i: number) => {
+        const quantity = parseInt(row['Qty'] || row['Quantity'] || 1);
+        const unitPrice = parseFloat(row['Unit Price'] || 0);
+        const description = row['Description']?.toString()?.trim() || '';
+
+        if (!description) {
+          throw new Error(`Row ${i + 2}: Description is required.`);
+        }
+
+        return {
+          id: `bulk-${Date.now()}-${i}`,
+          date: row['Date'] || new Date().toISOString().split('T')[0],
+          orderId: row['Order ID'] || '',
+          description,
+          quantity,
+          unitPrice,
+          amount: quantity * unitPrice
+        };
+      });
 
       onItemsAdd(items);
       setFile(null);
-      
+
       // Reset file input
-      const fileInput = document.getElementById('bulk-csv-file') as HTMLInputElement;
+      const fileInput = document.getElementById('bulk-excel-file') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
 
     } catch (error) {
-      console.error('Error parsing CSV:', error);
+      console.error("Error reading Excel file:", error);
       toast({
         title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to parse CSV file.",
+        description: error instanceof Error ? error.message : "Failed to parse Excel file.",
         variant: "destructive",
       });
     }
+
     setIsUploading(false);
   };
 
   const downloadTemplate = () => {
-    const template = `Sl No,Date,Order ID,Description,Qty,Unit Price
-1,2024-01-01,ORD-001,Website Development,1,75000
-2,2024-01-02,ORD-002,Logo Design,2,12500
-3,2024-01-03,ORD-003,Consulting Services,4,7500`;
+  const wsData = [
+    ["Sl No", "Date", "Order ID", "Description", "Qty", "Unit Price"],
+    [1, "2024-01-01", "ORD-001", "Website Development", 1, 75000],
+    [2, "2024-01-02", "ORD-002", "Logo Design", 2, 12500],
+    [3, "2024-01-03", "ORD-003", "Consulting Services", 4, 7500]
+  ];
 
-    const blob = new Blob([template], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'invoice_items_template.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "InvoiceItems");
+
+  // Fix: use type 'array' and wrap it in a Blob manually
+  const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([wbout], { type: "application/octet-stream" });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "invoice_items_template.xlsx";
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -121,7 +114,7 @@ const BulkUploadDialog = ({ open, onOpenChange, onItemsAdd }: BulkUploadDialogPr
         <DialogHeader>
           <DialogTitle>Bulk Upload Invoice Items</DialogTitle>
           <DialogDescription>
-            Upload multiple invoice items from a CSV file
+            Upload multiple invoice items from an Excel file (.xlsx)
           </DialogDescription>
         </DialogHeader>
 
@@ -129,24 +122,24 @@ const BulkUploadDialog = ({ open, onOpenChange, onItemsAdd }: BulkUploadDialogPr
           {/* Template Section */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h4 className="font-medium">CSV Template</h4>
+              <h4 className="font-medium">Excel Template</h4>
               <Button onClick={downloadTemplate} variant="outline" size="sm">
                 <Download className="w-4 h-4 mr-2" />
                 Download Template
               </Button>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg">
-              <h5 className="font-medium mb-2">Column order (must be followed exactly):</h5>
+              <h5 className="font-medium mb-2">Required Columns (must be in order):</h5>
               <ul className="text-sm text-gray-600 space-y-1">
-                <li><strong>1. Sl No:</strong> Serial number (optional)</li>
-                <li><strong>2. Date:</strong> Date in YYYY-MM-DD format (optional, defaults to today)</li>
-                <li><strong>3. Order ID:</strong> Order ID (optional)</li>
-                <li><strong>4. Description:</strong> Item description (required)</li>
-                <li><strong>5. Qty:</strong> Quantity (number, required)</li>
-                <li><strong>6. Unit Price:</strong> Price per unit in rupees (number, required)</li>
+                <li><strong>1. Sl No</strong> – Serial number (optional)</li>
+                <li><strong>2. Date</strong> – Format: YYYY-MM-DD (optional)</li>
+                <li><strong>3. Order ID</strong> – Order ID or SKU (optional)</li>
+                <li><strong>4. Description</strong> – Description of the item (required)</li>
+                <li><strong>5. Qty</strong> – Quantity (required)</li>
+                <li><strong>6. Unit Price</strong> – Per unit cost (required)</li>
               </ul>
               <p className="text-xs text-gray-500 mt-2">
-                Note: Values are assigned by column position, not by header names. Follow the exact order above.
+                Values are parsed from Excel cells. Ensure all data is in correct columns.
               </p>
             </div>
           </div>
@@ -154,11 +147,11 @@ const BulkUploadDialog = ({ open, onOpenChange, onItemsAdd }: BulkUploadDialogPr
           {/* Upload Section */}
           <div className="space-y-4">
             <div>
-              <Label htmlFor="bulk-csv-file">CSV File</Label>
+              <Label htmlFor="bulk-excel-file">Excel File</Label>
               <Input
-                id="bulk-csv-file"
+                id="bulk-excel-file"
                 type="file"
-                accept=".csv"
+                accept=".xlsx"
                 onChange={handleFileChange}
               />
             </div>
@@ -175,13 +168,13 @@ const BulkUploadDialog = ({ open, onOpenChange, onItemsAdd }: BulkUploadDialogPr
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button 
-                onClick={handleUpload} 
+              <Button
+                onClick={handleUpload}
                 disabled={!file || isUploading}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
                 <Upload className="w-4 h-4 mr-2" />
-                {isUploading ? 'Processing...' : 'Add Items'}
+                {isUploading ? "Processing..." : "Add Items"}
               </Button>
             </div>
           </div>
