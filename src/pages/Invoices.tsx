@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, Save, Download, Upload, Package } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import InvoiceItem from "@/components/InvoiceItem";
 import CustomerSelector from "@/components/CustomerSelector";
 import InvoicePreview from "@/components/InvoicePreview";
@@ -336,13 +338,96 @@ const Invoices = () => {
     setIsLoading(false);
   };
 
-  const exportToPDF = () => {
-    // This would integrate with a PDF generation library
+const exportToPDF = () => {
+  if (!invoice.customer) {
     toast({
-      title: "PDF Export",
-      description: "PDF export functionality will be implemented with a PDF library.",
+      title: "Missing Customer",
+      description: "Please select a customer before exporting the invoice.",
+      variant: "destructive",
     });
-  };
+    return;
+  }
+
+  const doc = new jsPDF();
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  // Header - Business Name
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.setTextColor(20, 100, 20);
+  doc.text(businessName || "Invoice", pageWidth / 2, 20, { align: "center" });
+
+  // Invoice Details
+  doc.setFontSize(12);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Invoice No: ${invoice.invoiceNumber}`, 20, 40);
+  doc.text(`Date: ${invoice.date}`, 20, 48);
+
+  // Customer Info
+  doc.text("Bill To:", 20, 60);
+  doc.setFont("helvetica", "normal");
+  const customer = invoice.customer!;
+  const customerInfo = `${customer.name}\n${customer.address}\n${customer.email || ""}\n${customer.phone || ""}`;
+  const splitCustomerInfo = doc.splitTextToSize(customerInfo, 80);
+  doc.text(splitCustomerInfo, 20, 68);
+
+  // Invoice Table
+  const tableData = invoice.items.map((item, index) => [
+    index + 1,
+    item.description,
+    item.quantity,
+    `₹${item.unitPrice.toFixed(2)}`,
+    `₹${item.amount.toFixed(2)}`
+  ]);
+
+  autoTable(doc, {
+    head: [["#", "Description", "Qty", "Unit Price", "Amount"]],
+    body: tableData,
+    startY: 110,
+    theme: "grid",
+    headStyles: { fillColor: [20, 100, 20] },
+    styles: { fontSize: 10, cellPadding: 3 },
+  });
+
+  let finalY = (doc as any).lastAutoTable.finalY || 110;
+
+  // Totals
+  doc.setFont("helvetica", "bold");
+  doc.text("Subtotal:", 130, finalY + 10);
+  doc.text(`₹${invoice.subtotal.toFixed(2)}`, 170, finalY + 10, { align: "right" });
+
+  doc.text(`Tax (${invoice.taxRate}%):`, 130, finalY + 18);
+  doc.text(`₹${invoice.taxAmount.toFixed(2)}`, 170, finalY + 18, { align: "right" });
+
+  if (invoice.discountAmount > 0) {
+    doc.text("Discount:", 130, finalY + 26);
+    doc.text(`-₹${invoice.discountAmount.toFixed(2)}`, 170, finalY + 26, { align: "right" });
+  }
+
+  doc.text("Total:", 130, finalY + 36);
+  doc.text(`₹${invoice.total.toFixed(2)}`, 170, finalY + 36, { align: "right" });
+
+  // Footer Notes
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text("Payment Instructions:", 20, finalY + 55);
+  const paymentLines = doc.splitTextToSize(invoice.paymentInstructions, pageWidth - 40);
+  doc.text(paymentLines, 20, finalY + 62);
+
+  doc.text("Thank You Note:", 20, finalY + 80);
+  const thankYouLines = doc.splitTextToSize(invoice.thankYouNote, pageWidth - 40);
+  doc.text(thankYouLines, 20, finalY + 87);
+
+  // Save PDF
+  doc.save(`${invoice.invoiceNumber}.pdf`);
+
+  toast({
+    title: "PDF Exported",
+    description: `Invoice ${invoice.invoiceNumber} downloaded successfully.`,
+  });
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-yellow-50 flex items-center justify-center p-4">
