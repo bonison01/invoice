@@ -1,8 +1,8 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Invoice } from "@/pages/Invoices";
 import { IndianRupee } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth"; // ✅ Added for guest detection
 
 interface InvoicePreviewProps {
   invoice: Invoice;
@@ -22,6 +22,9 @@ const InvoicePreview = ({
   sealUrl,
   signatureUrl,
 }: InvoicePreviewProps) => {
+  const { user } = useAuth();
+  const isGuest = !user; // ✅ Guest mode if not logged in
+
   return (
     <Card className="max-h-screen overflow-auto">
       <CardHeader>
@@ -37,13 +40,11 @@ const InvoicePreview = ({
                 <p className="text-gray-600">#{invoice.invoiceNumber}</p>
               </div>
               <div className="text-right">
-                <div className="text-lg font-semibold">{businessName}</div>
+                <div className="text-lg font-semibold">{businessName || "Business Name"}</div>
                 {businessAddress && (
                   <div className="text-sm text-gray-600 mt-1 whitespace-pre-line">{businessAddress}</div>
                 )}
-                {businessPhone && (
-                  <div className="text-sm text-gray-600">{businessPhone}</div>
-                )}
+                {businessPhone && <div className="text-sm text-gray-600">{businessPhone}</div>}
                 <div className="text-sm text-gray-600 mt-2">Date: {invoice.date}</div>
               </div>
             </div>
@@ -88,17 +89,15 @@ const InvoicePreview = ({
                       <TableCell className="text-xs">{item.quantity}</TableCell>
                       <TableCell className="text-xs">
                         <span className="inline-flex items-baseline">
-                          <IndianRupee className="w-3 h-3 mr-1" style={{ verticalAlign: 'baseline' }} />
+                          <IndianRupee className="w-3 h-3 mr-1" style={{ verticalAlign: "baseline" }} />
                           <span>{item.unitPrice.toFixed(2)}</span>
                         </span>
-
                       </TableCell>
                       <TableCell className="text-xs text-right">
                         <span className="inline-flex items-baseline">
-                          <IndianRupee className="w-3 h-3 mr-1" style={{ verticalAlign: 'baseline' }} />
-                          <span>{item.unitPrice.toFixed(2)}</span>
+                          <IndianRupee className="w-3 h-3 mr-1" style={{ verticalAlign: "baseline" }} />
+                          <span>{(item.unitPrice * item.quantity).toFixed(2)}</span>
                         </span>
-
                       </TableCell>
                     </TableRow>
                   ))}
@@ -147,46 +146,47 @@ const InvoicePreview = ({
 
           {/* Footer */}
           <div className="border-t pt-6 relative">
-            {/* Overlayed Seal (Larger and Centered Above Content) */}
+            {/* Seal */}
             {sealUrl && (
               <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
                 <img
                   src={sealUrl}
                   alt="Business Seal"
-                  style={{ width: '300px', height: '300px', objectFit: 'contain' }}
+                  style={{ width: "300px", height: "300px", objectFit: "contain" }}
                 />
               </div>
             )}
 
-            {/* Main Content Row */}
             <div className="flex flex-col md:flex-row justify-between items-start md:space-x-8 relative z-10">
-              {/* Left Column: Payment Instructions + UPI + Bank Details */}
-              <div className="flex-1 space-y-4">
-                {invoice.paymentInstructions && (
+              {/* ✅ Only show payment info if not guest */}
+              {!isGuest && (
+                <div className="flex-1 space-y-4">
+                  {invoice.paymentInstructions && (
+                    <div>
+                      <h4 className="font-semibold mb-2">Payment Instructions:</h4>
+                      <p className="text-sm text-gray-600 whitespace-pre-line">{invoice.paymentInstructions}</p>
+                    </div>
+                  )}
+
+                  {/* UPI */}
                   <div>
-                    <h4 className="font-semibold mb-2">Payment Instructions:</h4>
-                    <p className="text-sm text-gray-600 whitespace-pre-line">{invoice.paymentInstructions}</p>
+                    <h4 className="font-semibold mb-1">Payment UPI:</h4>
+                    <p className="text-sm text-gray-700">doeasy01-4@okaxis</p>
                   </div>
-                )}
 
-                {/* UPI */}
-                <div>
-                  <h4 className="font-semibold mb-1">Payment UPI:</h4>
-                  <p className="text-sm text-gray-700">doeasy01-4@okaxis</p>
+                  {/* Bank Details */}
+                  <div>
+                    <h4 className="font-semibold mb-1">Bank Details:</h4>
+                    <p className="text-sm text-gray-700 whitespace-pre-line">
+                      JUSTMATENG SERVICE PRIVATE LIMITED
+                      {"\n"}A/C No: 43261950171
+                      {"\n"}IFSC: SBIN0005320
+                    </p>
+                  </div>
                 </div>
+              )}
 
-                {/* Bank Details */}
-                <div>
-                  <h4 className="font-semibold mb-1">Bank Details:</h4>
-                  <p className="text-sm text-gray-700 whitespace-pre-line">
-                    JUSTMATENG SERVICE PRIVATE LIMITED
-                    {"\n"}A/C No: 43261950171
-                    {"\n"}IFSC: SBIN0005320
-                  </p>
-                </div>
-              </div>
-
-              {/* Right Column: Signature */}
+              {/* Signature */}
               {signatureUrl && (
                 <div className="w-64 text-center mt-6 md:mt-0 relative">
                   <div className="relative h-40 flex items-end justify-center">
@@ -199,7 +199,6 @@ const InvoicePreview = ({
                   </div>
                 </div>
               )}
-
             </div>
 
             {/* Thank You Note */}
@@ -209,7 +208,6 @@ const InvoicePreview = ({
               </div>
             )}
           </div>
-
         </div>
       </CardContent>
     </Card>
