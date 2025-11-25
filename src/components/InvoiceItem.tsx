@@ -11,80 +11,57 @@ interface InvoiceItemProps {
 
 const InvoiceItem = ({ item, onUpdate, onDelete }: InvoiceItemProps) => {
   return (
-    <div className="grid grid-cols-12 gap-3 items-center p-3 border rounded-xl bg-white shadow-sm">
-      {/* Date */}
-      <div className="col-span-2 min-w-[110px]">
-        <Input
-          type="date"
-          value={item.date}
-          onChange={(e) => onUpdate({ date: e.target.value })}
-          className="text-sm"
-        />
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-center border rounded-lg px-3 py-2 mb-2 bg-white shadow-sm">
+  <Input
+    type="date"
+    value={item.date}
+    onChange={(e) => onUpdate({ date: e.target.value })}
+    className="md:col-span-1"
+  />
 
-      {/* Order ID */}
-      <div className="col-span-2 min-w-[120px]">
-        <Input
-          placeholder="Order ID"
-          value={item.orderId}
-          onChange={(e) => onUpdate({ orderId: e.target.value })}
-          className="text-sm"
-        />
-      </div>
+  <Input
+    placeholder="Order ID"
+    value={item.orderId}
+    onChange={(e) => onUpdate({ orderId: e.target.value })}
+    className="md:col-span-1"
+  />
 
-      {/* Description */}
-      <div className="col-span-3 min-w-[180px]">
-        <Input
-          placeholder="Description"
-          value={item.description}
-          onChange={(e) => onUpdate({ description: e.target.value })}
-          className="text-sm"
-        />
-      </div>
+  <Input
+    placeholder="Description"
+    value={item.description}
+    onChange={(e) => onUpdate({ description: e.target.value })}
+    className="md:col-span-2"
+  />
 
-      {/* Quantity */}
-      <div className="col-span-1 flex justify-center">
-        <Input
-          type="number"
-          className="text-center text-sm w-full min-w-[70px]"
-          value={item.quantity}
-          onChange={(e) =>
-            onUpdate({ quantity: parseFloat(e.target.value) || 0 })
-          }
-        />
-      </div>
+  <Input
+    type="number"
+    value={item.quantity}
+    onChange={(e) => onUpdate({ quantity: Number(e.target.value) })}
+    className="md:col-span-1"
+  />
 
-      {/* Unit Price */}
-      <div className="col-span-2 min-w-[120px]">
-        <Input
-          type="number"
-          step="0.01"
-          placeholder="Unit Price"
-          value={item.unitPrice}
-          onChange={(e) =>
-            onUpdate({ unitPrice: parseFloat(e.target.value) || 0 })
-          }
-          className="text-sm"
-        />
-      </div>
+  <Input
+    type="number"
+    value={item.unitPrice}
+    onChange={(e) => onUpdate({ unitPrice: Number(e.target.value) })}
+    className="md:col-span-1"
+  />
 
-      {/* Amount */}
-      <div className="col-span-1 text-right font-semibold text-gray-800">
-        ₹{item.amount.toFixed(2)}
-      </div>
+  <div className="flex items-center justify-between md:justify-end gap-3 md:col-span-6">
+    <span className="font-medium text-gray-700">
+      ₹{item.amount.toFixed(2)}
+    </span>
+    <Button
+      variant="destructive"
+      size="icon"
+      onClick={onDelete}
+      className="w-8 h-8 rounded-full"
+    >
+      🗑
+    </Button>
+  </div>
+</div>
 
-      {/* Delete Button */}
-      <div className="col-span-1 flex justify-center">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onDelete}
-          className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-400"
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
-      </div>
-    </div>
   );
 };
 
