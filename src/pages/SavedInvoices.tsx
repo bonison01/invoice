@@ -1,4 +1,3 @@
-// src/pages/SavedInvoices.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,7 +39,7 @@ interface SavedInvoice {
   customer_address: string;
   total: number;
   business_name: string;
-  items: any[];
+  items: any; // string in DB, array after processing
   subtotal: number;
   tax_rate: number;
   tax_amount: number;
@@ -48,6 +47,10 @@ interface SavedInvoice {
   payment_instructions: string;
   thank_you_note: string;
   created_at: string;
+  business_address?: string;
+  business_phone?: string;
+  seal_url?: string;
+  signature_url?: string;
 }
 
 const SavedInvoices = () => {
@@ -71,37 +74,34 @@ const SavedInvoices = () => {
     }
   }, [user]);
 
-
   const deleteInvoice = async (invoiceId: string) => {
-  if (!user) return;
-  const confirmed = window.confirm("Are you sure you want to delete this invoice?");
-  if (!confirmed) return;
+    if (!user) return;
+    const confirmed = window.confirm("Are you sure you want to delete this invoice?");
+    if (!confirmed) return;
 
-  try {
-    const { error } = await supabase
-      .from("saved_invoices")
-      .delete()
-      .eq("id", invoiceId)
-      .eq("user_id", user.id);
+    try {
+      const { error } = await supabase
+        .from("saved_invoices")
+        .delete()
+        .eq("id", invoiceId)
+        .eq("user_id", user.id);
 
-    if (error) throw error;
+      if (error) throw error;
 
-    toast({
-      title: "Success",
-      description: "Invoice deleted successfully.",
-    });
+      toast({
+        title: "Success",
+        description: "Invoice deleted successfully.",
+      });
 
-    // Refresh list
-    setInvoices((prev) => prev.filter((inv) => inv.id !== invoiceId));
-  } catch (error) {
-    toast({
-      title: "Error",
-      description: "Failed to delete invoice.",
-      variant: "destructive",
-    });
-  }
-};
-
+      setInvoices((prev) => prev.filter((inv) => inv.id !== invoiceId));
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete invoice.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const fetchBusinessSettings = async () => {
     if (!user) return;
@@ -139,16 +139,22 @@ const SavedInvoices = () => {
 
       if (error) throw error;
 
-      const processedData = (data || []).map((invoice) => ({
+      const processedData = (data || []).map((invoice: any) => ({
         ...invoice,
         items: Array.isArray(invoice.items)
           ? invoice.items
           : typeof invoice.items === "string"
-            ? JSON.parse(invoice.items)
-            : [],
+          ? (() => {
+              try {
+                return JSON.parse(invoice.items);
+              } catch {
+                return [];
+              }
+            })()
+          : [],
       }));
 
-      setInvoices(processedData);
+      setInvoices(processedData as SavedInvoice[]);
     } catch (error) {
       toast({
         title: "Error",
@@ -172,6 +178,7 @@ const SavedInvoices = () => {
     subtotal: savedInvoice.subtotal,
     taxRate: savedInvoice.tax_rate,
     taxAmount: savedInvoice.tax_amount,
+    // We only stored a final discount amount, so treat it as fixed
     discountType: "fixed",
     discountValue: savedInvoice.discount,
     discountAmount: savedInvoice.discount,
@@ -239,33 +246,40 @@ const SavedInvoices = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-  {invoices.map((invoice) => (
-    <TableRow key={invoice.id}>
-      <TableCell>{invoice.invoice_number}</TableCell>
-      <TableCell>{invoice.date}</TableCell>
-      <TableCell>{invoice.customer_name}</TableCell>
-      <TableCell>₹{invoice.total.toFixed(2)}</TableCell>
-      <TableCell>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => viewInvoice(invoice)}>
-            <Eye className="w-4 h-4 mr-1" /> View
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => downloadInvoice(invoice)}>
-            <Download className="w-4 h-4 mr-1" /> Download
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => deleteInvoice(invoice.id)} // Make sure `invoice` is from `.map`
-          >
-            Delete
-          </Button>
-        </div>
-      </TableCell>
-    </TableRow>
-  ))}
-</TableBody>
-
+                    {invoices.map((invoice) => (
+                      <TableRow key={invoice.id}>
+                        <TableCell>{invoice.invoice_number}</TableCell>
+                        <TableCell>{invoice.date}</TableCell>
+                        <TableCell>{invoice.customer_name}</TableCell>
+                        <TableCell>₹{invoice.total.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => viewInvoice(invoice)}
+                            >
+                              <Eye className="w-4 h-4 mr-1" /> View
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => downloadInvoice(invoice)}
+                            >
+                              <Download className="w-4 h-4 mr-1" /> Download
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => deleteInvoice(invoice.id)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
                 </Table>
               </div>
             )}

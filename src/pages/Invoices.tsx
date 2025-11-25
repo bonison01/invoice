@@ -195,8 +195,8 @@ const Invoices = () => {
               ...item,
               ...updatedItem,
               amount:
-                (updatedItem.quantity || item.quantity) *
-                (updatedItem.unitPrice || item.unitPrice),
+                (updatedItem.quantity ?? item.quantity) *
+                (updatedItem.unitPrice ?? item.unitPrice),
             }
           : item
       ),
@@ -207,6 +207,7 @@ const Invoices = () => {
     setInvoice((prev) => ({ ...prev, items: prev.items.filter((item) => item.id !== id) }));
   };
 
+  // 🔐 SAVE INVOICE WITH FULL DATA, ITEMS AS JSON STRING
   const saveInvoice = async () => {
     if (!user) {
       toast({
@@ -233,17 +234,37 @@ const Invoices = () => {
         invoice_number: invoice.invoiceNumber,
         date: invoice.date,
         customer_name: invoice.customer?.name || "",
+        customer_email: invoice.customer?.email || "",
+        customer_address: invoice.customer?.address || "",
+        // Fix: items must be JSON-serializable, so store as string
+        items: JSON.stringify(invoice.items),
         subtotal: invoice.subtotal,
+        tax_rate: invoice.taxRate,
+        tax_amount: invoice.taxAmount,
+        // Your table currently has single `discount` column
+        discount: invoice.discountAmount,
         total: invoice.total,
+        payment_instructions: invoice.paymentInstructions,
+        thank_you_note: invoice.thankYouNote,
         business_name: businessSettings?.business_name || businessName,
+        business_address: businessSettings?.business_address || "",
+        business_phone: businessSettings?.business_phone || "",
+        seal_url: businessSettings?.seal_url || "",
+        signature_url: businessSettings?.signature_url || "",
       };
+
       const { error } = await supabase.from("saved_invoices").insert(invoiceData);
       if (error) throw error;
+
       toast({ title: "Invoice saved!", description: "Successfully saved." });
       navigate("/saved-invoices");
     } catch (err) {
       console.error(err);
-      toast({ title: "Error", description: "Failed to save invoice.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to save invoice.",
+        variant: "destructive",
+      });
     }
     setIsLoading(false);
   };
@@ -309,43 +330,42 @@ const Invoices = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-  <div>
-    <Label htmlFor="invoiceNumber">Invoice Number</Label>
-    <Input
-      id="invoiceNumber"
-      value={invoice.invoiceNumber}
-      onChange={(e) =>
-        setInvoice((prev) => ({ ...prev, invoiceNumber: e.target.value }))
-      }
-    />
-  </div>
+                  <div>
+                    <Label htmlFor="invoiceNumber">Invoice Number</Label>
+                    <Input
+                      id="invoiceNumber"
+                      value={invoice.invoiceNumber}
+                      onChange={(e) =>
+                        setInvoice((prev) => ({ ...prev, invoiceNumber: e.target.value }))
+                      }
+                    />
+                  </div>
 
-  <div>
-    <Label htmlFor="date">Invoice Date</Label>
-    <Input
-      id="date"
-      type="date"
-      value={invoice.date}
-      onChange={(e) =>
-        setInvoice((prev) => ({ ...prev, date: e.target.value }))
-      }
-    />
-  </div>
+                  <div>
+                    <Label htmlFor="date">Invoice Date</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={invoice.date}
+                      onChange={(e) =>
+                        setInvoice((prev) => ({ ...prev, date: e.target.value }))
+                      }
+                    />
+                  </div>
 
-  {/* ✅ Guest Business Name Input */}
-  {!user && (
-    <div className="col-span-2">
-      <Label htmlFor="businessName">Business Name (optional)</Label>
-      <Input
-        id="businessName"
-        placeholder="Enter your business name"
-        value={businessName}
-        onChange={(e) => setBusinessName(e.target.value)}
-      />
-    </div>
-  )}
-</div>
-
+                  {/* Guest Business Name Input */}
+                  {!user && (
+                    <div className="col-span-2">
+                      <Label htmlFor="businessName">Business Name (optional)</Label>
+                      <Input
+                        id="businessName"
+                        placeholder="Enter your business name"
+                        value={businessName}
+                        onChange={(e) => setBusinessName(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
@@ -368,10 +388,18 @@ const Invoices = () => {
                 <div className="flex justify-between items-center">
                   <CardTitle>Invoice Items</CardTitle>
                   <div className="flex gap-2">
-                    <Button onClick={() => setShowProductSelector(true)} size="sm" variant="outline">
+                    <Button
+                      onClick={() => setShowProductSelector(true)}
+                      size="sm"
+                      variant="outline"
+                    >
                       <Package className="w-4 h-4 mr-2" /> From Inventory
                     </Button>
-                    <Button onClick={() => setShowBulkUpload(true)} size="sm" variant="outline">
+                    <Button
+                      onClick={() => setShowBulkUpload(true)}
+                      size="sm"
+                      variant="outline"
+                    >
                       <Upload className="w-4 h-4 mr-2" /> Bulk Upload
                     </Button>
                     <Button onClick={addItem} size="sm">
@@ -411,7 +439,10 @@ const Invoices = () => {
                       type="number"
                       value={invoice.taxRate}
                       onChange={(e) =>
-                        setInvoice((prev) => ({ ...prev, taxRate: parseFloat(e.target.value) || 0 }))
+                        setInvoice((prev) => ({
+                          ...prev,
+                          taxRate: parseFloat(e.target.value) || 0,
+                        }))
                       }
                     />
                   </div>
@@ -483,7 +514,10 @@ const Invoices = () => {
                   <Textarea
                     value={invoice.paymentInstructions}
                     onChange={(e) =>
-                      setInvoice((prev) => ({ ...prev, paymentInstructions: e.target.value }))
+                      setInvoice((prev) => ({
+                        ...prev,
+                        paymentInstructions: e.target.value,
+                      }))
                     }
                   />
                 </div>
@@ -492,7 +526,10 @@ const Invoices = () => {
                   <Textarea
                     value={invoice.thankYouNote}
                     onChange={(e) =>
-                      setInvoice((prev) => ({ ...prev, thankYouNote: e.target.value }))
+                      setInvoice((prev) => ({
+                        ...prev,
+                        thankYouNote: e.target.value,
+                      }))
                     }
                   />
                 </div>
